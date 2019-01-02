@@ -27,7 +27,7 @@ contract("SwapperdETH", function (accounts: string[]) {
 
         const aliceInitial = new BN(await web3.eth.getBalance(alice));
         const initiateTx = await swapperd.initiate(
-            swapID, bob, secretLock, timeLock, { from: alice, value: 100000 }
+            swapID, bob, secretLock, timeLock, 100000, { from: alice, value: 100000 }
         );
         const aliceFinal = new BN(await web3.eth.getBalance(alice));
         const initiateTxFee = await getFee(initiateTx)
@@ -58,7 +58,7 @@ contract("SwapperdETH", function (accounts: string[]) {
 
         const aliceInitial = new BN(await web3.eth.getBalance(alice));
         const initiateTx = await swapperd.initiateWithFees(
-            swapID, bob, broker, 200, secretLock, timeLock, { from: alice, value: 100000 }
+            swapID, bob, broker, 200, secretLock, timeLock, 100000, { from: alice, value: 100000 }
         );
         const aliceFinal = new BN(await web3.eth.getBalance(alice));
         const initiateTxFee = await getFee(initiateTx)
@@ -89,7 +89,7 @@ contract("SwapperdETH", function (accounts: string[]) {
 
         const aliceInitial = new BN(await web3.eth.getBalance(alice));
         const initiateTx = await swapperd.initiate(
-            swapID, bob, secretLock, timeLock, { from: alice, value: 100000 }
+            swapID, bob, secretLock, timeLock, 100000, { from: alice, value: 100000 }
         );
         const aliceFinal = new BN(await web3.eth.getBalance(alice));
         const initiateTxFee = await getFee(initiateTx)
@@ -108,7 +108,7 @@ contract("SwapperdETH", function (accounts: string[]) {
 
         const aliceInitial = new BN(await web3.eth.getBalance(alice));
         const initiateTx = await swapperd.initiateWithFees(
-            swapID, bob, broker, 200, secretLock, timeLock, { from: alice, value: 100000 }
+            swapID, bob, broker, 200, secretLock, timeLock, 100000, { from: alice, value: 100000 }
         );
         const aliceFinal = new BN(await web3.eth.getBalance(alice));
         const initiateTxFee = await getFee(initiateTx)
@@ -125,8 +125,8 @@ contract("SwapperdETH", function (accounts: string[]) {
         const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
 
         // Can only initiateWithFees for INVALID swaps
-        await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), { from: alice, value: 100000 });
-        await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), { from: alice, value: 100000 })
+        await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), 100000, { from: alice, value: 100000 });
+        await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), 100000, { from: alice, value: 100000 })
             .should.be.rejectedWith(null, /revert/);    
             // .should.be.rejectedWith(null, /swap opened previously/);
 
@@ -156,7 +156,7 @@ contract("SwapperdETH", function (accounts: string[]) {
         (await swapperd.refundable(swapID)).should.be.false;
         (await swapperd.redeemable(swapID)).should.be.false;
 
-        await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), { from: alice, value: 100000 });
+        await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), 100000, { from: alice, value: 100000 });
 
         (await swapperd.initiatable(swapID)).should.be.false;
         (await swapperd.refundable(swapID)).should.be.false;

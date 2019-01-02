@@ -80,20 +80,22 @@ contract SwapperdEth {
     /// @param _brokerFee The fee to be paid to the broker on success.
     /// @param _secretLock The hash of the secret (Hash Lock).
     /// @param _timelock The unix timestamp when the swap expires.
+    /// @param _value The value of the atomic swap.
     function initiateWithFees(
         bytes32 _swapID,
         address _spender,
         address _broker,
         uint256 _brokerFee,
         bytes32 _secretLock,
-        uint256 _timelock
+        uint256 _timelock,
+        uint256 _value
     ) external onlyInvalidSwaps(_swapID) payable {
-        require(msg.value >= _brokerFee);
+        require(_value == msg.value && _value >= _brokerFee);
         // Store the details of the swap.
         Swap memory swap = Swap({
             timelock: _timelock,
             brokerFee: _brokerFee,
-            value: msg.value - _brokerFee,
+            value: _value - _brokerFee,
             funder: address(uint160(msg.sender)),
             spender: address(uint160(_spender)),
             broker: address(uint160(_broker)),
@@ -113,17 +115,20 @@ contract SwapperdEth {
     /// @param _spender The address of the withdrawing trader.
     /// @param _secretLock The hash of the secret (Hash Lock).
     /// @param _timelock The unix timestamp when the swap expires.
+    /// @param _value The value of the atomic swap.
     function initiate(
         bytes32 _swapID,
         address _spender,
         bytes32 _secretLock,
-        uint256 _timelock
+        uint256 _timelock,
+        uint256 _value
     ) external onlyInvalidSwaps(_swapID) payable {
+        require(_value == msg.value);
         // Store the details of the swap.
         Swap memory swap = Swap({
             timelock: _timelock,
             brokerFee: 0,
-            value: msg.value,
+            value: _value,
             funder: address(uint160(msg.sender)),
             spender: address(uint160(_spender)),
             broker: address(0x0),
