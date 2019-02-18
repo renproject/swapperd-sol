@@ -1,4 +1,4 @@
-const SwapperdETH = artifacts.require("SwapperdETH");
+const SwapperdEth = artifacts.require("SwapperdEth");
 const SwapperdERC20 = artifacts.require("SwapperdERC20");
 const WBTC = artifacts.require("WBTC");
 
@@ -14,7 +14,7 @@ module.exports = async function (deployer, network, accounts) {
     await deployer
 
         .then(() => deployer.deploy(
-            SwapperdETH,
+            SwapperdEth,
             VERSION_STRING,
         ))
 

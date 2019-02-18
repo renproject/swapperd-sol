@@ -5,11 +5,11 @@ import { SHA256 } from "crypto-js";
 import { randomID, second, getFee, secondsFromNow, sleep } from "./helper/testUtils";
 import { BN } from "bn.js";
 
-// import { SwapperdETH } from "./bindings/swapperd_eth";
+// import { SwapperdEth } from "./bindings/swapperd_eth";
 
-const SwapperdETH = artifacts.require("SwapperdETH");
+const SwapperdEth = artifacts.require("SwapperdEth");
 
-contract("SwapperdETH", function (accounts: string[]) {
+contract("SwapperdEth", function (accounts: string[]) {
 
     let swapperd: any;
     const alice = accounts[1];
@@ -17,7 +17,7 @@ contract("SwapperdETH", function (accounts: string[]) {
     const broker = accounts[3];
 
     before(async function () {
-        swapperd = await SwapperdETH.deployed();
+        swapperd = await SwapperdEth.deployed();
     });
 
     it("can perform atomic swap", async () => {
