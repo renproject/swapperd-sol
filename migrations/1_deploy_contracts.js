@@ -1,5 +1,5 @@
 const EthSwapContract = artifacts.require("EthSwapContract");
-const WBTCSwapContract = artifacts.require("WBTCSwapContract");
+const ERC20SwapContract = artifacts.require("ERC20SwapContract");
 const WBTC = artifacts.require("WBTC");
 
 // const RepublicToken = artifacts.require("RepublicToken");
@@ -23,7 +23,7 @@ module.exports = async function (deployer, network, accounts) {
         // ))
 
         // .then(() => deployer.deploy(
-        //     WBTCSwapContract,
+        //     ERC20SwapContract,
         //     VERSION_STRING,
         //     RepublicToken,
         // ))
@@ -38,7 +38,7 @@ module.exports = async function (deployer, network, accounts) {
         })
 
         .then(() => deployer.deploy(
-            WBTCSwapContract,
+            ERC20SwapContract,
             VERSION_STRING,
             WBTC.address,
         ));

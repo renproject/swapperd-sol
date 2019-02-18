@@ -1,11 +1,11 @@
 pragma solidity ^0.5.1;
 
-import "./ISwapContract.sol";
+import "./interfaces/ISwapContract.sol";
 import "./BaseSwapContract.sol";
-import "./CompatibleERC20.sol";
+import "./libraries/CompatibleERC20.sol";
 
-/// @notice WBTCSwapContract implements the ERC20SwapContract interface.
-contract WBTCSwapContract is ISwapContract, BaseSwapContract {
+/// @notice ERC20WithFeesSwapContract implements the ERC20WithFeesSwapContract interface.
+contract ERC20WithFeesSwapContract is ISwapContract, BaseSwapContract {
     using CompatibleERC20Functions for CompatibleERC20;
 
     address public TOKEN_ADDRESS; // Address of the ERC20 contract. Passed in as a constructor parameter

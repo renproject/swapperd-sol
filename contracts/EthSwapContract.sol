@@ -1,6 +1,6 @@
 pragma solidity ^0.5.1;
 
-import "./ISwapContract.sol";
+import "./interfaces/ISwapContract.sol";
 import "./BaseSwapContract.sol";
 
 /// @notice EthSwapContract implements the RenEx atomic swapping interface
