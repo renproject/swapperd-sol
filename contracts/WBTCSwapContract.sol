@@ -1,22 +1,9 @@
 pragma solidity ^0.5.1;
 
-interface CompatibleERC20 {
-    // Modified to not return boolean
-    function transfer(address to, uint256 value) external;
-    function transferFrom(address from, address to, uint256 value) external;
-    function approve(address spender, uint256 value) external;
+import "./ERC20SwapContract.sol";
 
-    // Not modifier
-    function totalSupply() external view returns (uint256);
-    function balanceOf(address who) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-/// @notice SwapperdERC20 implements the RenEx atomic swapping interface
-/// for Ether values. Does not support ERC20 tokens.
-contract SwapperdERC20 {
+/// @notice WBTCSwapContract implements the ERC20SwapContract interface.
+contract WBTCSwapContract is ERC20SwapContract {
     string public VERSION; // Passed in as a constructor parameter.
     address public TOKEN_ADDRESS; // Address of the ERC20 contract. Passed in as a constructor parameter
 
@@ -77,6 +64,12 @@ contract SwapperdERC20 {
     /// @notice Throws if the secret key is not valid.
     modifier onlyWithSecretKey(bytes32 _swapID, bytes32 _secretKey) {
         require(swaps[_swapID].secretLock == sha256(abi.encodePacked(_secretKey)), "invalid secret");
+        _;
+    }
+
+    /// @notice Throws if the caller is not the authorized spender.
+    modifier onlySpender(bytes32 _swapID, address _spender) {
+        require(swaps[_swapID].spender == _spender, "unauthorized spender");
         _;
     }
 

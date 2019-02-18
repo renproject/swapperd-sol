@@ -1,8 +1,8 @@
 pragma solidity ^0.5.1;
 
-/// @notice SwapperdEth implements the RenEx atomic swapping interface
+/// @notice EthSwapContract implements the RenEx atomic swapping interface
 /// for Ether values. Does not support ERC20 tokens.
-contract SwapperdEth {
+contract EthSwapContract {
     string public VERSION; // Passed in as a constructor parameter.
 
     struct Swap {
@@ -62,6 +62,12 @@ contract SwapperdEth {
     /// @notice Throws if the secret key is not valid.
     modifier onlyWithSecretKey(bytes32 _swapID, bytes32 _secretKey) {
         require(swaps[_swapID].secretLock == sha256(abi.encodePacked(_secretKey)), "invalid secret");
+        _;
+    }
+
+    /// @notice Throws if the caller is not the authorized spender.
+    modifier onlySpender(bytes32 _swapID, address _spender) {
+        require(swaps[_swapID].spender == _spender, "unauthorized spender");
         _;
     }
 
@@ -145,19 +151,22 @@ contract SwapperdEth {
     /// @notice Redeems an atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.
+    /// @param _receiver The receiver's address.
     /// @param _secretKey The secret of the atomic swap.
-    function redeem(bytes32 _swapID, bytes32 _secretKey) external onlyOpenSwaps(_swapID) onlyWithSecretKey(_swapID, _secretKey) {
+    function redeem(bytes32 _swapID, address _receiver, bytes32 _secretKey) external onlyOpenSwaps(_swapID) onlyWithSecretKey(_swapID, _secretKey) onlySpender(_swapID, msg.sender) {
+        address payable receiver = address(uint160(_receiver));
+
         // Close the swap.
         swaps[_swapID].secretKey = _secretKey;
         swapStates[_swapID] = States.CLOSED;
         /* solium-disable-next-line security/no-block-members */
         redeemedAt[_swapID] = now;
 
-        // Transfer the ETH funds from this contract to the withdrawing trader.
-        swaps[_swapID].spender.transfer(swaps[_swapID].value);
-
         // Update the broker fees to the broker.
-        brokerFees[msg.sender] += swaps[_swapID].brokerFee;
+        brokerFees[swaps[_swapID].broker] += swaps[_swapID].brokerFee;
+
+        // Transfer the ETH funds from this contract to the receiver.
+        receiver.transfer(swaps[_swapID].value);
 
         // Logs close event
         emit LogClose(_swapID, _secretKey);

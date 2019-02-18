@@ -14,7 +14,7 @@ contract WBTC is ERC20, ERC20Detailed("Wrapped BTC", "WBTC", 8),
         super.burn(value);
     }
 
-    function finishMinting() public onlyPrimary returns (bool) {
+    function finishMinting() public view onlyPrimary returns (bool) {
         return false;
     }
 }

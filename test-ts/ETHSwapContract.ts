@@ -4,12 +4,13 @@ import { SHA256 } from "crypto-js";
 
 import { randomID, second, getFee, secondsFromNow, sleep } from "./helper/testUtils";
 import { BN } from "bn.js";
+import { format } from "path";
 
-// import { SwapperdETH } from "./bindings/swapperd_eth";
+// import { ETHSwapContract } from "./bindings/swapperd_eth";
 
-const SwapperdETH = artifacts.require("SwapperdETH");
+const ETHSwapContract = artifacts.require("ETHSwapContract");
 
-contract("SwapperdETH", function (accounts: string[]) {
+contract("ETHSwapContract", function (accounts: string[]) {
 
     let swapperd: any;
     const alice = accounts[1];
@@ -17,7 +18,7 @@ contract("SwapperdETH", function (accounts: string[]) {
     const broker = accounts[3];
 
     before(async function () {
-        swapperd = await SwapperdETH.deployed();
+        swapperd = await ETHSwapContract.deployed();
     });
 
     it("can perform atomic swap", async () => {
@@ -43,7 +44,7 @@ contract("SwapperdETH", function (accounts: string[]) {
         swapAudit[6].should.equal(secretLock);
 
         const bobInitial = new BN(await web3.eth.getBalance(bob));
-        const redeemTx = await swapperd.redeem(swapID, secret, { from: bob });
+        const redeemTx = await swapperd.redeem(swapID, bob, secret, { from: bob });
         const bobFinal = new BN(await web3.eth.getBalance(bob));
         const redeemTxFee = await getFee(redeemTx)
         bobFinal.sub(bobInitial).add(redeemTxFee).should.bignumber.equal(100000);
@@ -74,7 +75,7 @@ contract("SwapperdETH", function (accounts: string[]) {
         swapAudit[6].should.equal(secretLock);
 
         const bobInitial = new BN(await web3.eth.getBalance(bob));
-        const redeemTx = await swapperd.redeem(swapID, secret, { from: bob });
+        const redeemTx = await swapperd.redeem(swapID, bob, secret, { from: bob });
         const bobFinal = new BN(await web3.eth.getBalance(bob));
         const redeemTxFee = await getFee(redeemTx)
         bobFinal.sub(bobInitial).add(redeemTxFee).should.bignumber.equal(99800);
@@ -138,11 +139,11 @@ contract("SwapperdETH", function (accounts: string[]) {
             // .should.be.rejectedWith(null, /swap not expirable/);
 
         // Can only redeem for OPEN swaps and with valid key
-        await swapperd.redeem(swapID, secretLock, { from: bob })
+        await swapperd.redeem(swapID, bob, secretLock, { from: bob })
             .should.be.rejectedWith(null, /revert/);    
             // .should.be.rejectedWith(null, /invalid secret/);
-        await swapperd.redeem(swapID, secret, { from: bob });
-        await swapperd.redeem(swapID, secret, { from: bob })
+        await swapperd.redeem(swapID, bob, secret, { from: bob });
+        await swapperd.redeem(swapID, bob, secret, { from: bob })
             .should.be.rejectedWith(null, /revert/);        
             // .should.be.rejectedWith(null, /swap not open/);
     });
@@ -168,7 +169,7 @@ contract("SwapperdETH", function (accounts: string[]) {
         (await swapperd.refundable(swapID)).should.be.true;
         (await swapperd.redeemable(swapID)).should.be.true;
 
-        await swapperd.redeem(swapID, secret, { from: bob });
+        await swapperd.redeem(swapID, bob, secret, { from: bob });
 
         (await swapperd.initiatable(swapID)).should.be.false;
         (await swapperd.refundable(swapID)).should.be.false;

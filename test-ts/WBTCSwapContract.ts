@@ -5,10 +5,10 @@ import { SHA256 } from "crypto-js";
 import { randomID, second, getFee, secondsFromNow, sleep } from "./helper/testUtils";
 import { BN } from "bn.js";
 
-const SwapperdERC20 = artifacts.require("SwapperdERC20");
+const WBTCSwapContract = artifacts.require("WBTCSwapContract");
 const WBTC = artifacts.require("WBTC");
 
-contract("SwapperdWBTC", function (accounts: string[]) {
+contract("WBTCSwapContract", function (accounts: string[]) {
 
     let swapperd: any;
     let wbtc: any;
@@ -17,7 +17,7 @@ contract("SwapperdWBTC", function (accounts: string[]) {
     const broker = accounts[3];
 
     before(async function () {
-        swapperd = await SwapperdERC20.deployed();
+        swapperd = await WBTCSwapContract.deployed();
         wbtc = await WBTC.deployed();
         await wbtc.transfer(alice, 100000000);
     });
@@ -46,7 +46,7 @@ contract("SwapperdWBTC", function (accounts: string[]) {
         swapAudit[6].should.equal(secretLock);
 
         const bobInitial = new BN(await wbtc.balanceOf(bob));
-        await swapperd.redeem(swapID, secret, { from: bob });
+        await swapperd.redeem(swapID, bob, secret, { from: bob });
         const bobFinal = new BN(await wbtc.balanceOf(bob));
         bobFinal.sub(bobInitial).should.bignumber.equal(100000);
 
@@ -77,7 +77,7 @@ contract("SwapperdWBTC", function (accounts: string[]) {
         swapAudit[6].should.equal(secretLock);
 
         const bobInitial = new BN(await wbtc.balanceOf(bob));
-        await swapperd.redeem(swapID, secret, { from: bob });
+        await swapperd.redeem(swapID, bob, secret, { from: bob });
         const bobFinal = new BN(await wbtc.balanceOf(bob));
         bobFinal.sub(bobInitial).should.bignumber.equal(99800);
 
@@ -146,11 +146,11 @@ contract("SwapperdWBTC", function (accounts: string[]) {
             // .should.be.rejectedWith(null, /swap not expirable/);
 
         // Can only redeem for OPEN swaps and with valid key
-        await swapperd.redeem(swapID, secretLock, { from: bob })
+        await swapperd.redeem(swapID, bob, secretLock, { from: bob })
             .should.be.rejectedWith(null, /revert/);    
             // .should.be.rejectedWith(null, /invalid secret/);
-        await swapperd.redeem(swapID, secret, { from: bob });
-        await swapperd.redeem(swapID, secret, { from: bob })
+        await swapperd.redeem(swapID, bob, secret, { from: bob });
+        await swapperd.redeem(swapID, bob, secret, { from: bob })
             .should.be.rejectedWith(null, /revert/);        
             // .should.be.rejectedWith(null, /swap not open/);
     });
@@ -178,7 +178,7 @@ contract("SwapperdWBTC", function (accounts: string[]) {
         (await swapperd.refundable(swapID)).should.be.true;
         (await swapperd.redeemable(swapID)).should.be.true;
 
-        await swapperd.redeem(swapID, secret, { from: bob });
+        await swapperd.redeem(swapID, bob, secret, { from: bob });
 
         (await swapperd.initiatable(swapID)).should.be.false;
         (await swapperd.refundable(swapID)).should.be.false;
