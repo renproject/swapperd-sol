@@ -1,20 +1,6 @@
 pragma solidity ^0.5.1;
 
-interface CompatibleERC20 {
-    // Modified to not return boolean
-    function transfer(address to, uint256 value) external;
-    function transferFrom(address from, address to, uint256 value) external;
-    function approve(address spender, uint256 value) external;
-
-    // Not modifier
-    function totalSupply() external view returns (uint256);
-    function balanceOf(address who) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-interface ERC20SwapContract {
+interface ISwapContract {
     /// @notice Initiates the atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.
@@ -28,7 +14,7 @@ interface ERC20SwapContract {
         bytes32 _secretLock,
         uint256 _timelock,
         uint256 _value
-    ) external;
+    ) external payable;
 
     /// @notice Initiates the atomic swap with broker fees.
     ///
@@ -47,14 +33,14 @@ interface ERC20SwapContract {
         bytes32 _secretLock,
         uint256 _timelock,
         uint256 _value
-    ) external;
+    ) external payable;
 
     /// @notice Redeems an atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.
     /// @param _receiver The receiver's address.
     /// @param _secretKey The secret of the atomic swap.
-    function redeem(bytes32 _swapID, address _receiver, bytes32 _secretKey) external;
+    function redeem(bytes32 _swapID, address payable _receiver, bytes32 _secretKey) external;
 
     /// @notice Refunds an atomic swap.
     ///
@@ -69,7 +55,16 @@ interface ERC20SwapContract {
     /// @notice Audits an atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.
-    function audit(bytes32 _swapID) external view returns (uint256 timelock, uint256 value, address to, uint256 brokerFee, address broker, address from, bytes32 secretLock);
+    function audit(
+        bytes32 _swapID
+    ) external view returns (
+        uint256 timelock,
+        uint256 value,
+        address to, uint256 brokerFee,
+        address broker,
+        address from,
+        bytes32 secretLock
+    );
 
     /// @notice Audits the secret of an atomic swap.
     ///
