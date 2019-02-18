@@ -1,4 +1,4 @@
-const ETHSwapContract = artifacts.require("ETHSwapContract");
+const EthSwapContract = artifacts.require("EthSwapContract");
 const WBTCSwapContract = artifacts.require("WBTCSwapContract");
 const WBTC = artifacts.require("WBTC");
 
@@ -14,7 +14,7 @@ module.exports = async function (deployer, network, accounts) {
     await deployer
 
         .then(() => deployer.deploy(
-            ETHSwapContract,
+            EthSwapContract,
             VERSION_STRING,
         ))
 
