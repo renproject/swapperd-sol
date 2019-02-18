@@ -23,7 +23,7 @@
   },
   "license": "GPL-3.0-only",
   "dependencies": {
-    "openzeppelin-solidity": "^2.1.0-rc.2",
+    "openzeppelin-solidity": "^2.1.2",
     "solc": "^0.5.1"
   },
   "devDependencies": {
