@@ -1,11 +1,11 @@
-import { BN } from "bn.js";
+import BN from "bn.js";
 // import { TimeContract } from "../bindings/time";
 
 import BigNumber from "bignumber.js";
 
-import * as chai from "chai";
-import * as chaiAsPromised from "chai-as-promised";
-import * as chaiBigNumber from "chai-bignumber";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import chaiBigNumber from "chai-bignumber";
 
 const Time = artifacts.require("Time");
 

@@ -12,6 +12,7 @@
             "mocha"
         ],
         "module": "commonjs",
+        "esModuleInterop": true,
         "noImplicitAny": true,
         "noImplicitReturns": true,
         "removeComments": true,

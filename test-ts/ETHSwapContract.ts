@@ -1,10 +1,8 @@
-import * as HEX from "crypto-js/enc-hex";
+import BN from "bn.js";
+import HEX from "crypto-js/enc-hex";
 
 import { SHA256 } from "crypto-js";
-
 import { randomID, second, getFee, secondsFromNow, sleep } from "./helper/testUtils";
-import { BN } from "bn.js";
-import { format } from "path";
 
 // import { EthSwapContract } from "./bindings/swapperd_eth";
 

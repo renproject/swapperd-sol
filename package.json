@@ -23,6 +23,7 @@
   },
   "license": "GPL-3.0-only",
   "dependencies": {
+    "@types/bn.js": "^4.11.4",
     "openzeppelin-solidity": "^2.1.2",
     "solc": "^0.5.1"
   },

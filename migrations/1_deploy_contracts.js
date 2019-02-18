@@ -1,3 +1,5 @@
+/// <reference types="../test-ts/typings/truffle" />
+
 const EthSwapContract = artifacts.require("EthSwapContract");
 const ERC20SwapContract = artifacts.require("ERC20SwapContract");
 const WBTC = artifacts.require("WBTC");
