@@ -3,7 +3,7 @@ import BN from "bn.js";
 import HEX from "crypto-js/enc-hex";
 
 import { SHA256 } from "crypto-js";
-import { randomID, second, secondsFromNow, sleep } from "./helper/testUtils";
+import { randomID, second, secondsFromNow, sleep, Ox0 } from "./helper/testUtils";
 import { ERC20SwapContract } from "./bindings/erc20_swap";
 import { WBTCContract } from "./bindings/wbtc";
 
@@ -151,6 +151,35 @@ contract("ERC20Swap", function (accounts: string[]) {
         await swapperd.redeem(swapID, bob, secret, { from: bob });
         await swapperd.redeem(swapID, bob, secret, { from: bob })
             .should.be.rejectedWith(null, /((revert)|(swap not open))\.?$/);
+    });
+
+    it("recipient checks in in redeem", async () => {
+        const swapID = randomID(), secret = randomID();
+        const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
+
+        await wbtc.approve(swapperd.address, 100000, { from: alice });
+        await swapperd.initiate(swapID, bob, secretLock, await secondsFromNow(2), 100000, { from: alice });
+
+        // Only Bob can redeem
+        await swapperd.redeem(swapID, bob, secret, { from: alice })
+            .should.be.rejectedWith(null, /((revert)|(unauthorized spender))\.?$/);
+
+        // Recipient can't be 0x0
+        await swapperd.redeem(swapID, Ox0, secret, { from: bob })
+            .should.be.rejectedWith(null, /((revert)|(invalid receiver))\.?$/);
+
+        await swapperd.redeem(swapID, alice, secret, { from: bob });
+    });
+
+    it("can't send eth for token swap", async () => {
+        const swapID = randomID(), secret = randomID();
+        const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
+
+        await swapperd.initiate(swapID, bob, secretLock, await secondsFromNow(2), 100000, { from: alice, value: 100000 })
+            .should.be.rejectedWith(null, /((revert)|(eth value must be zero))\.?$/);
+
+        await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), 100000, { from: alice, value: 100000 })
+            .should.be.rejectedWith(null, /((revert)|(eth value must be zero))\.?$/);
     });
 
     it("can return details", async () => {

@@ -10,7 +10,7 @@ interface SwapInterface {
     /// @param _value The value of the atomic swap.
     function initiate(
         bytes32 _swapID,
-        address _spender,
+        address payable _spender,
         bytes32 _secretLock,
         uint256 _timelock,
         uint256 _value
@@ -27,8 +27,8 @@ interface SwapInterface {
     /// @param _value The value of the atomic swap.
     function initiateWithFees(
         bytes32 _swapID,
-        address _spender,
-        address _broker,
+        address payable _spender,
+        address payable _broker,
         uint256 _brokerFee,
         bytes32 _secretLock,
         uint256 _timelock,

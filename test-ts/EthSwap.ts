@@ -159,6 +159,24 @@ contract("EthSwap", function (accounts: string[]) {
         await swapperd.redeem(swapID, alice, secret, { from: bob });
     });
 
+    it("broker fee must be less than value", async () => {
+        const swapID = randomID(), secret = randomID();
+        const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
+        await swapperd.initiateWithFees(swapID, bob, broker, 201, secretLock, await secondsFromNow(2), 200, { from: alice, value: 200 })
+            .should.be.rejectedWith(null, /((revert)|(fee must be less than value))\.?$/);
+    });
+
+    it("eth amount must match value", async () => {
+        const swapID = randomID(), secret = randomID();
+        const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
+
+        await swapperd.initiate(swapID, bob, secretLock, await secondsFromNow(2), 100000, { from: alice, value: 99999 })
+            .should.be.rejectedWith(null, /((revert)|(eth amount must match value))\.?$/);
+
+        await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), 100000, { from: alice, value: 100001 })
+            .should.be.rejectedWith(null, /((revert)|(eth amount must match value))\.?$/);
+    });
+
     it("can return details", async () => {
         const swapID = randomID(), secret = randomID();
         const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;

@@ -1,6 +1,8 @@
 pragma solidity ^0.5.0;
 
-contract BaseSwap {
+import "./interfaces/SwapInterface.sol";
+
+contract BaseSwap is SwapInterface {
     string public VERSION; // Passed in as a constructor parameter.
 
     struct Swap {
@@ -76,6 +78,38 @@ contract BaseSwap {
         VERSION = _VERSION;
     }
 
+    /// @notice Initiates the atomic swap.
+    ///
+    /// @param _swapID The unique atomic swap id.
+    /// @param _spender The address of the withdrawing trader.
+    /// @param _secretLock The hash of the secret (Hash Lock).
+    /// @param _timelock The unix timestamp when the swap expires.
+    /// @param _value The value of the atomic swap.
+    function initiate(
+        bytes32 _swapID,
+        address payable _spender,
+        bytes32 _secretLock,
+        uint256 _timelock,
+        uint256 _value
+    ) public onlyInvalidSwaps(_swapID) payable {
+        // Store the details of the swap.
+        Swap memory swap = Swap({
+            timelock: _timelock,
+            brokerFee: 0,
+            value: _value,
+            funder: msg.sender,
+            spender: _spender,
+            broker: address(0x0),
+            secretLock: _secretLock,
+            secretKey: 0x0
+        });
+        swaps[_swapID] = swap;
+        swapStates[_swapID] = States.OPEN;
+
+        // Logs open event
+        emit LogOpen(_swapID, _spender, _secretLock);
+    }
+
     /// @notice Initiates the atomic swap with fees.
     ///
     /// @param _swapID The unique atomic swap id.
@@ -87,21 +121,23 @@ contract BaseSwap {
     /// @param _value The value of the atomic swap.
     function initiateWithFees(
         bytes32 _swapID,
-        address _spender,
-        address _broker,
+        address payable _spender,
+        address payable _broker,
         uint256 _brokerFee,
         bytes32 _secretLock,
         uint256 _timelock,
         uint256 _value
     ) public onlyInvalidSwaps(_swapID) payable {
+        require(_value >= _brokerFee, "fee must be less than value");
+
         // Store the details of the swap.
         Swap memory swap = Swap({
             timelock: _timelock,
             brokerFee: _brokerFee,
             value: _value - _brokerFee,
-            funder: address(uint160(msg.sender)),
-            spender: address(uint160(_spender)),
-            broker: address(uint160(_broker)),
+            funder: msg.sender,
+            spender: _spender,
+            broker: _broker,
             secretLock: _secretLock,
             secretKey: 0x0
         });

@@ -9,6 +9,31 @@ contract EthSwap is SwapInterface, BaseSwap {
 
     constructor(string memory _VERSION) BaseSwap(_VERSION) public {
     }
+    
+    /// @notice Initiates the atomic swap.
+    ///
+    /// @param _swapID The unique atomic swap id.
+    /// @param _spender The address of the withdrawing trader.
+    /// @param _secretLock The hash of the secret (Hash Lock).
+    /// @param _timelock The unix timestamp when the swap expires.
+    /// @param _value The value of the atomic swap.
+    function initiate(
+        bytes32 _swapID,
+        address payable _spender,
+        bytes32 _secretLock,
+        uint256 _timelock,
+        uint256 _value
+    ) public payable {
+        require(_value == msg.value, "eth amount must match value");
+
+        BaseSwap.initiate(
+            _swapID,
+            _spender,
+            _secretLock,
+            _timelock,
+            _value
+        );
+    }
 
     /// @notice Initiates the atomic swap with fees.
     ///
@@ -21,45 +46,20 @@ contract EthSwap is SwapInterface, BaseSwap {
     /// @param _value The value of the atomic swap.
     function initiateWithFees(
         bytes32 _swapID,
-        address _spender,
-        address _broker,
+        address payable _spender,
+        address payable _broker,
         uint256 _brokerFee,
         bytes32 _secretLock,
         uint256 _timelock,
         uint256 _value
     ) public payable {
-        require(_value == msg.value && _value >= _brokerFee);
+        require(_value == msg.value, "eth amount must match value");
+
         BaseSwap.initiateWithFees(
             _swapID,
             _spender,
             _broker,
             _brokerFee,
-            _secretLock,
-            _timelock,
-            _value
-        );
-    }
-
-    /// @notice Initiates the atomic swap.
-    ///
-    /// @param _swapID The unique atomic swap id.
-    /// @param _spender The address of the withdrawing trader.
-    /// @param _secretLock The hash of the secret (Hash Lock).
-    /// @param _timelock The unix timestamp when the swap expires.
-    /// @param _value The value of the atomic swap.
-    function initiate(
-        bytes32 _swapID,
-        address _spender,
-        bytes32 _secretLock,
-        uint256 _timelock,
-        uint256 _value
-    ) public payable {
-        require(_value == msg.value);
-        BaseSwap.initiateWithFees(
-            _swapID,
-            _spender,
-            address(0x0),
-            0,
             _secretLock,
             _timelock,
             _value

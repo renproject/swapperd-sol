@@ -26,14 +26,14 @@ contract ERC20WithFeesSwap is SwapInterface, BaseSwap {
     /// @param _value The value of the atomic swap.
     function initiate(
         bytes32 _swapID,
-        address _spender,
+        address payable _spender,
         bytes32 _secretLock,
         uint256 _timelock,
         uint256 _value
     ) public payable {
         // To abide by the interface, the function is payable but throws if
         // msg.value is non-zero
-        require(msg.value == 0, "non-zero eth value");
+        require(msg.value == 0, "eth value must be zero");
 
         // Transfer the token to the contract
         // TODO: Initiator will first need to call
@@ -41,11 +41,9 @@ contract ERC20WithFeesSwap is SwapInterface, BaseSwap {
         // before this contract can make transfers on the initiator's behalf.
         uint256 value = CompatibleERC20(TOKEN_ADDRESS).safeTransferFromWithFees(msg.sender, address(this), _value);
         
-        BaseSwap.initiateWithFees(
+        BaseSwap.initiate(
             _swapID,
             _spender,
-            address(0x0),
-            0,
             _secretLock,
             _timelock,
             value
@@ -63,8 +61,8 @@ contract ERC20WithFeesSwap is SwapInterface, BaseSwap {
     /// @param _value The value of the atomic swap.
     function initiateWithFees(
         bytes32 _swapID,
-        address _spender,
-        address _broker,
+        address payable _spender,
+        address payable _broker,
         uint256 _brokerFee,
         bytes32 _secretLock,
         uint256 _timelock,
@@ -72,14 +70,13 @@ contract ERC20WithFeesSwap is SwapInterface, BaseSwap {
     ) public payable {
         // To abide by the interface, the function is payable but throws if
         // msg.value is non-zero
-        require(msg.value == 0, "non-zero eth value");
+        require(msg.value == 0, "eth value must be zero");
 
         // Transfer the token to the contract
         // TODO: Initiator will first need to call
         // ERC20(TOKEN_ADDRESS).approve(address(this), _value)
         // before this contract can make transfers on the initiator's behalf.
         uint256 value = CompatibleERC20(TOKEN_ADDRESS).safeTransferFromWithFees(msg.sender, address(this), _value);
-        require(_broker != address(0x0) && _brokerFee != 0, "broker and broker fee must be initiated");
 
         BaseSwap.initiateWithFees(
             _swapID,
