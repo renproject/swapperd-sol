@@ -1,6 +1,10 @@
 pragma solidity ^0.5.0;
 
 interface SwapInterface {
+    // Public variables
+    function brokerFees(address _broker) external view returns (uint256);
+    function redeemedAt(bytes32 _swapID) external view returns(uint256);
+
     /// @notice Initiates the atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.

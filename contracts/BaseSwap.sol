@@ -30,25 +30,25 @@ contract BaseSwap is SwapInterface {
 
     // Storage
     mapping (bytes32 => Swap) internal swaps;
-    mapping (bytes32 => States) private swapStates;
-    mapping (address => uint256) public brokerFees;
-    mapping (bytes32 => uint256) public redeemedAt;
+    mapping (bytes32 => States) private _swapStates;
+    mapping (address => uint256) private _brokerFees;
+    mapping (bytes32 => uint256) private _redeemedAt;
 
     /// @notice Throws if the swap is not invalid (i.e. has already been opened)
     modifier onlyInvalidSwaps(bytes32 _swapID) {
-        require(swapStates[_swapID] == States.INVALID, "swap opened previously");
+        require(_swapStates[_swapID] == States.INVALID, "swap opened previously");
         _;
     }
 
     /// @notice Throws if the swap is not open.
     modifier onlyOpenSwaps(bytes32 _swapID) {
-        require(swapStates[_swapID] == States.OPEN, "swap not open");
+        require(_swapStates[_swapID] == States.OPEN, "swap not open");
         _;
     }
 
     /// @notice Throws if the swap is not closed.
     modifier onlyClosedSwaps(bytes32 _swapID) {
-        require(swapStates[_swapID] == States.CLOSED, "swap not redeemed");
+        require(_swapStates[_swapID] == States.CLOSED, "swap not redeemed");
         _;
     }
 
@@ -104,7 +104,7 @@ contract BaseSwap is SwapInterface {
             secretKey: 0x0
         });
         swaps[_swapID] = swap;
-        swapStates[_swapID] = States.OPEN;
+        _swapStates[_swapID] = States.OPEN;
 
         // Logs open event
         emit LogOpen(_swapID, _spender, _secretLock);
@@ -142,7 +142,7 @@ contract BaseSwap is SwapInterface {
             secretKey: 0x0
         });
         swaps[_swapID] = swap;
-        swapStates[_swapID] = States.OPEN;
+        _swapStates[_swapID] = States.OPEN;
 
         // Logs open event
         emit LogOpen(_swapID, _spender, _secretLock);
@@ -158,12 +158,12 @@ contract BaseSwap is SwapInterface {
 
         // Close the swap.
         swaps[_swapID].secretKey = _secretKey;
-        swapStates[_swapID] = States.CLOSED;
+        _swapStates[_swapID] = States.CLOSED;
         /* solium-disable-next-line security/no-block-members */
-        redeemedAt[_swapID] = now;
+        _redeemedAt[_swapID] = now;
 
         // Update the broker fees to the broker.
-        brokerFees[swaps[_swapID].broker] += swaps[_swapID].brokerFee;
+        _brokerFees[swaps[_swapID].broker] += swaps[_swapID].brokerFee;
 
         // Logs close event
         emit LogClose(_swapID, _secretKey);
@@ -174,7 +174,7 @@ contract BaseSwap is SwapInterface {
     /// @param _swapID The unique atomic swap id.
     function refund(bytes32 _swapID) public onlyOpenSwaps(_swapID) onlyExpirableSwaps(_swapID) {
         // Expire the swap.
-        swapStates[_swapID] = States.EXPIRED;
+        _swapStates[_swapID] = States.EXPIRED;
 
         // Logs expire event
         emit LogExpire(_swapID);
@@ -184,8 +184,8 @@ contract BaseSwap is SwapInterface {
     ///
     /// @param _amount The withdrawal amount.
     function withdrawBrokerFees(uint256 _amount) public {
-        require(_amount <= brokerFees[msg.sender], "insufficient withdrawable fees");
-        brokerFees[msg.sender] -= _amount;
+        require(_amount <= _brokerFees[msg.sender], "insufficient withdrawable fees");
+        _brokerFees[msg.sender] -= _amount;
     }
 
     /// @notice Audits an atomic swap.
@@ -216,21 +216,29 @@ contract BaseSwap is SwapInterface {
     /// @param _swapID The unique atomic swap id.
     function refundable(bytes32 _swapID) external view returns (bool) {
         /* solium-disable-next-line security/no-block-members */
-        return (now >= swaps[_swapID].timelock && swapStates[_swapID] == States.OPEN);
+        return (now >= swaps[_swapID].timelock && _swapStates[_swapID] == States.OPEN);
     }
 
     /// @notice Checks whether a swap is initiatable or not.
     ///
     /// @param _swapID The unique atomic swap id.
     function initiatable(bytes32 _swapID) external view returns (bool) {
-        return (swapStates[_swapID] == States.INVALID);
+        return (_swapStates[_swapID] == States.INVALID);
     }
 
     /// @notice Checks whether a swap is redeemable or not.
     ///
     /// @param _swapID The unique atomic swap id.
     function redeemable(bytes32 _swapID) external view returns (bool) {
-        return (swapStates[_swapID] == States.OPEN);
+        return (_swapStates[_swapID] == States.OPEN);
+    }
+
+    function redeemedAt(bytes32 _swapID) external view returns (uint256) {
+        return _redeemedAt[_swapID];
+    }
+
+    function brokerFees(address _broker) external view returns (uint256) {
+        return _brokerFees[_broker];
     }
 
     /// @notice Generates a deterministic swap id using initiate swap details.

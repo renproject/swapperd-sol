@@ -12,6 +12,7 @@ module.exports = {
 
         // Contracts for assisting the tests
         "test/Time.sol",
-        "test/WBTC.sol",
+        "test/StandardToken.sol",
+        "test/TokenWithFees.sol",
     ],
 };

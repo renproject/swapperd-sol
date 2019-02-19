@@ -4,24 +4,24 @@ import HEX from "crypto-js/enc-hex";
 
 import { SHA256 } from "crypto-js";
 import { randomID, second, secondsFromNow, sleep, Ox0 } from "./helper/testUtils";
-import { ERC20SwapContract } from "./bindings/erc20_swap";
-import { StandardTokenContract } from "./bindings/standard_token";
+import { ERC20WithFeesSwapContract } from "./bindings/erc20_with_fees_swap";
+import { TokenWithFeesContract } from "./bindings/token_with_fees";
 
-const ERC20Swap = artifacts.require("ERC20Swap");
-const StandardToken = artifacts.require("StandardToken");
+const ERC20WithFeesSwap = artifacts.require("ERC20WithFeesSwap");
+const TokenWithFees = artifacts.require("TokenWithFees");
 
-contract("ERC20Swap", function (accounts: string[]) {
+contract("ERC20WithFeesSwap", function (accounts: string[]) {
 
-    let swapperd: ERC20SwapContract;
-    let standardToken: StandardTokenContract;
+    let swapperd: ERC20WithFeesSwapContract;
+    let tokenWithFees: TokenWithFeesContract;
     const alice = accounts[1];
     const bob = accounts[2];
     const broker = accounts[3];
 
     before(async function () {
-        swapperd = await ERC20Swap.deployed();
-        standardToken = await StandardToken.deployed();
-        await standardToken.transfer(alice, 100000000);
+        swapperd = await ERC20WithFeesSwap.deployed();
+        tokenWithFees = await TokenWithFees.deployed();
+        await tokenWithFees.transfer(alice, 100000000);
     });
 
     it("can perform atomic swap", async () => {
@@ -29,28 +29,32 @@ contract("ERC20Swap", function (accounts: string[]) {
         const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
         const timeLock = await secondsFromNow(60 * 60 * 24)
 
-        await standardToken.approve(swapperd.address, 100000, { from: alice })
+        const value = 100000;
+        const valueAfter1Tx = value - Math.floor((value * 3) / 1000);
+        const valueAfter2Tx = valueAfter1Tx - Math.floor((valueAfter1Tx * 3) / 1000);
 
-        const aliceInitial = new BN(await standardToken.balanceOf(alice));
+        await tokenWithFees.approve(swapperd.address, value, { from: alice })
+
+        const aliceInitial = new BN(await tokenWithFees.balanceOf(alice));
         await swapperd.initiate(
-            swapID, bob, secretLock, timeLock, 100000, { from: alice }
+            swapID, bob, secretLock, timeLock, value, { from: alice }
         );
-        const aliceFinal = new BN(await standardToken.balanceOf(alice));
-        aliceInitial.sub(aliceFinal).should.bignumber.equal(100000);
+        const aliceFinal = new BN(await tokenWithFees.balanceOf(alice));
+        aliceInitial.sub(aliceFinal).should.bignumber.equal(value);
 
         const swapAudit = await swapperd.audit(swapID);
         swapAudit[0].should.bignumber.equal(timeLock);
-        swapAudit[1].should.bignumber.equal(100000);
+        swapAudit[1].should.bignumber.equal(valueAfter1Tx);
         swapAudit[2].should.equal(bob);
         swapAudit[3].should.bignumber.equal(0);
         swapAudit[4].should.equal('0x0000000000000000000000000000000000000000');
         swapAudit[5].should.equal(alice);
         swapAudit[6].should.equal(secretLock);
 
-        const bobInitial = new BN(await standardToken.balanceOf(bob));
+        const bobInitial = new BN(await tokenWithFees.balanceOf(bob));
         await swapperd.redeem(swapID, bob, secret, { from: bob });
-        const bobFinal = new BN(await standardToken.balanceOf(bob));
-        bobFinal.sub(bobInitial).should.bignumber.equal(100000);
+        const bobFinal = new BN(await tokenWithFees.balanceOf(bob));
+        bobFinal.sub(bobInitial).should.bignumber.equal(valueAfter2Tx);
 
         await swapperd.auditSecret(swapID);
     });
@@ -58,30 +62,35 @@ contract("ERC20Swap", function (accounts: string[]) {
     it("can perform atomic swap with fees", async () => {
         const swapID = randomID(), secret = randomID();
         const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
-        const timeLock = await secondsFromNow(60 * 60 * 24)
+        const timeLock = await secondsFromNow(60 * 60 * 24);
 
-        await standardToken.approve(swapperd.address, 100000, { from: alice })
+        const value = 100000;
+        const fees = 200;
+        const valueAfter1Tx = (value - Math.floor((value * 3) / 1000)) - fees;
+        const valueAfter2Tx = valueAfter1Tx - Math.floor((valueAfter1Tx * 3) / 1000);
 
-        const aliceInitial = new BN(await standardToken.balanceOf(alice));
+        await tokenWithFees.approve(swapperd.address, value, { from: alice })
+
+        const aliceInitial = new BN(await tokenWithFees.balanceOf(alice));
         await swapperd.initiateWithFees(
-            swapID, bob, broker, 200, secretLock, timeLock, 100000, { from: alice }
+            swapID, bob, broker, fees, secretLock, timeLock, value, { from: alice }
         );
-        const aliceFinal = new BN(await standardToken.balanceOf(alice));
-        aliceInitial.sub(aliceFinal).should.bignumber.equal(100000);
+        const aliceFinal = new BN(await tokenWithFees.balanceOf(alice));
+        aliceInitial.sub(aliceFinal).should.bignumber.equal(value);
 
         const swapAudit = await swapperd.audit(swapID);
         swapAudit[0].should.bignumber.equal(timeLock);
-        swapAudit[1].should.bignumber.equal(99800);
+        swapAudit[1].should.bignumber.equal(valueAfter1Tx);
         swapAudit[2].should.equal(bob);
-        swapAudit[3].should.bignumber.equal(200);
+        swapAudit[3].should.bignumber.equal(fees);
         swapAudit[4].should.equal(broker);
         swapAudit[5].should.equal(alice);
         swapAudit[6].should.equal(secretLock);
 
-        const bobInitial = new BN(await standardToken.balanceOf(bob));
+        const bobInitial = new BN(await tokenWithFees.balanceOf(bob));
         await swapperd.redeem(swapID, bob, secret, { from: bob });
-        const bobFinal = new BN(await standardToken.balanceOf(bob));
-        bobFinal.sub(bobInitial).should.bignumber.equal(99800);
+        const bobFinal = new BN(await tokenWithFees.balanceOf(bob));
+        bobFinal.sub(bobInitial).should.bignumber.equal(valueAfter2Tx);
 
         await swapperd.auditSecret(swapID);
     });
@@ -91,18 +100,24 @@ contract("ERC20Swap", function (accounts: string[]) {
         const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
         const timeLock = await secondsFromNow(0);
 
-        await standardToken.approve(swapperd.address, 100000, { from: alice });
+        const value = 100000;
+        const valueAfter1Tx = (value - Math.floor((value * 3) / 1000));
+        const valueAfter2Tx = (valueAfter1Tx - Math.floor((valueAfter1Tx * 3) / 1000));
 
-        const aliceInitial = new BN(await standardToken.balanceOf(alice));
+        await tokenWithFees.approve(swapperd.address, value, { from: alice });
+
+        const aliceInitial = new BN(await tokenWithFees.balanceOf(alice));
         await swapperd.initiate(
-            swapID, bob, secretLock, timeLock, 100000, { from: alice }
+            swapID, bob, secretLock, timeLock, value, { from: alice }
         );
-        const aliceFinal = new BN(await standardToken.balanceOf(alice));
-        aliceInitial.sub(aliceFinal).should.bignumber.equal(100000);
+        const aliceFinal = new BN(await tokenWithFees.balanceOf(alice));
+        aliceInitial.sub(aliceFinal).should.bignumber.equal(value);
 
         await swapperd.refund(swapID, { from: alice });
-        const aliceRefunded = new BN(await standardToken.balanceOf(alice));
-        aliceRefunded.sub(aliceFinal).should.bignumber.equal(100000);
+        const aliceRefunded = new BN(await tokenWithFees.balanceOf(alice));
+        aliceRefunded.should.bignumber.equal(
+            aliceInitial.sub(new BN(valueAfter1Tx)).add(new BN(valueAfter2Tx))
+        );
     });
 
     it("can refund an atomic swap with fees", async () => {
@@ -110,17 +125,17 @@ contract("ERC20Swap", function (accounts: string[]) {
         const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
         const timeLock = await secondsFromNow(0);
 
-        await standardToken.approve(swapperd.address, 100000, { from: alice });
+        await tokenWithFees.approve(swapperd.address, 100000, { from: alice });
 
-        const aliceInitial = new BN(await standardToken.balanceOf(alice));
+        const aliceInitial = new BN(await tokenWithFees.balanceOf(alice));
         await swapperd.initiateWithFees(
             swapID, bob, broker, 200, secretLock, timeLock, 100000, { from: alice }
         );
-        const aliceFinal = new BN(await standardToken.balanceOf(alice));
+        const aliceFinal = new BN(await tokenWithFees.balanceOf(alice));
         aliceInitial.sub(aliceFinal).should.bignumber.equal(100000);
 
         await swapperd.refund(swapID, { from: alice });
-        const aliceRefunded = new BN(await standardToken.balanceOf(alice));
+        const aliceRefunded = new BN(await tokenWithFees.balanceOf(alice));
         aliceRefunded.sub(aliceFinal).should.bignumber.equal(100000);
     });
 
@@ -133,9 +148,9 @@ contract("ERC20Swap", function (accounts: string[]) {
             .should.be.rejectedWith(null, /revert/);
 
         // Can only initiateWithFees for INVALID swaps
-        await standardToken.approve(swapperd.address, 100000, { from: alice });
+        await tokenWithFees.approve(swapperd.address, 100000, { from: alice });
         await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), 100000, { from: alice });
-        await standardToken.approve(swapperd.address, 100000, { from: alice });
+        await tokenWithFees.approve(swapperd.address, 100000, { from: alice });
         await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), 100000, { from: alice })
             .should.be.rejectedWith(null, /((revert)|(swap opened previously))\.?$/);
 
@@ -157,7 +172,7 @@ contract("ERC20Swap", function (accounts: string[]) {
         const swapID = randomID(), secret = randomID();
         const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
 
-        await standardToken.approve(swapperd.address, 100000, { from: alice });
+        await tokenWithFees.approve(swapperd.address, 100000, { from: alice });
         await swapperd.initiate(swapID, bob, secretLock, await secondsFromNow(2), 100000, { from: alice });
 
         // Only Bob can redeem
@@ -186,7 +201,7 @@ contract("ERC20Swap", function (accounts: string[]) {
         const swapID = randomID(), secret = randomID();
         const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
 
-        await standardToken.approve(swapperd.address, 100000, { from: alice });
+        await tokenWithFees.approve(swapperd.address, 100000, { from: alice });
 
         // Before initiating
         (await swapperd.initiatable(swapID)).should.be.true;
@@ -223,9 +238,9 @@ contract("ERC20Swap", function (accounts: string[]) {
 
     it("can withdraw broker fees", async () => {
         const fees = await swapperd.brokerFees(broker);
-        const brokerInitial = new BN(await standardToken.balanceOf(broker));
+        const brokerInitial = new BN(await tokenWithFees.balanceOf(broker));
         await swapperd.withdrawBrokerFees(fees, { from: broker });
-        const brokerFinal = new BN(await standardToken.balanceOf(broker));
+        const brokerFinal = new BN(await tokenWithFees.balanceOf(broker));
         brokerFinal.sub(brokerInitial).should.bignumber.equal(fees);
     });
 });

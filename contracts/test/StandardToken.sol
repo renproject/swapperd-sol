@@ -7,7 +7,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Pausable.sol";
 import "openzeppelin-solidity/contracts/ownership/Secondary.sol";
 
-contract WBTC is ERC20, ERC20Detailed("Wrapped BTC", "WBTC", 8),
+contract StandardToken is ERC20, ERC20Detailed("Standard Token", "STD", 8),
     ERC20Mintable, ERC20Burnable, ERC20Pausable, Secondary {
 
     function burn(uint value) public onlyPrimary {
