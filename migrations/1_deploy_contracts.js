@@ -7,6 +7,8 @@ const ERC20WithFeesSwap = artifacts.require("ERC20WithFeesSwap");
 const StandardToken = artifacts.require("StandardToken");
 const TokenWithFees = artifacts.require("TokenWithFees");
 
+const Time = artifacts.require("Time");
+
 const config = require("./config.js");
 
 module.exports = async function (deployer, network, accounts) {
@@ -15,6 +17,9 @@ module.exports = async function (deployer, network, accounts) {
     const deployerAddress = accounts[0];
 
     await deployer
+        .then(() => deployer.deploy(
+            Time,
+        ))
 
         .then(() => deployer.deploy(
             EthSwap,

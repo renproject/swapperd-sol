@@ -6,7 +6,7 @@ const GWEI = 1000000000;
 
 const KOVAN = (MNEMONIC) => ({
     provider: function () {
-        return new HDWalletProvider(MNEMONIC, `https://kovan.infura.io/${process.env.INFURA_TOKEN}`);
+        return HDWalletProvider(MNEMONIC, `https://kovan.infura.io/${process.env.INFURA_TOKEN}`);
     },
     network_id: 42,
     gas: 6721975,
@@ -15,7 +15,7 @@ const KOVAN = (MNEMONIC) => ({
 
 const MAINNET = (MNEMONIC) => ({
     provider: function () {
-        return new HDWalletProvider(MNEMONIC, `https://mainnet.infura.io/${process.env.INFURA_TOKEN}`);
+        return HDWalletProvider(MNEMONIC, `https://mainnet.infura.io/${process.env.INFURA_TOKEN}`);
     },
     network_id: 1,
     gas: 6721975,
@@ -52,6 +52,6 @@ module.exports = {
         // },
         useColors: true,
         bail: true,
-        forbidOnly: (process.env.CI == true)
+        forbidOnly: (process.env.CI == "true")
     },
 };

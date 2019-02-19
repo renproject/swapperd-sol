@@ -2,16 +2,11 @@ import BN from "bn.js";
 import HEX from "crypto-js/enc-hex";
 
 import { SHA256 } from "crypto-js";
-import { randomID, second, getFee, secondsFromNow, sleep, Ox0, ETH } from "./helper/testUtils";
+import { randomID, getFee, secondsFromNow, ETH, subFees, increaseTime } from "./helper/testUtils";
 
 import { SwapInterfaceContract } from "./bindings/swap_interface";
 import { ERC20DetailedContract } from "./bindings/erc20_detailed";
 import { TestCase, testCases } from "./testCases";
-
-const subFees = (value: BN | number | string, fee: number): BN => {
-    value = new BN(value);
-    return value.sub((value.mul(new BN(fee))).div(new BN(1000)));
-};
 
 const testContract = (testCase: TestCase) => {
     contract(testCase.name, (accounts: string[]) => {
@@ -186,14 +181,15 @@ const testContract = (testCase: TestCase) => {
             (await swapperd.redeemable(swapID)).should.be.false;
 
             const value = 100000;
+            const timelock = 2;
             await token.approve(swapperd.address, value, { from: alice });
-            await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), value, { from: alice, value: token === ETH ? value : 0 });
+            await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(timelock), value, { from: alice, value: token === ETH ? value : 0 });
 
             (await swapperd.initiatable(swapID)).should.be.false;
             (await swapperd.refundable(swapID)).should.be.false;
             (await swapperd.redeemable(swapID)).should.be.true;
 
-            await sleep(3 * second);
+            await increaseTime(timelock);
 
             (await swapperd.initiatable(swapID)).should.be.false;
             (await swapperd.refundable(swapID)).should.be.true;
@@ -213,6 +209,21 @@ const testContract = (testCase: TestCase) => {
 
             (await swapperd.swapID(secretLock, timeLock))
                 .should.equal(swapID);
+        });
+
+        it("can retrieve redeem time", async () => {
+            const swapID = randomID(), secret = randomID();
+            const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
+            const value = 100000;
+            const timelock = 2;
+            await token.approve(swapperd.address, value, { from: alice });
+            await swapperd.initiate(swapID, bob, secretLock, await secondsFromNow(timelock), value, { from: alice, value: token === ETH ? value : 0 });
+            await increaseTime(timelock);
+            const now = await secondsFromNow(0);
+            await swapperd.redeem(swapID, alice, secret, { from: bob });
+
+            (await swapperd.redeemedAt(swapID))
+                .should.bignumber.equal(now);
         });
 
         it("can withdraw broker fees", async () => {

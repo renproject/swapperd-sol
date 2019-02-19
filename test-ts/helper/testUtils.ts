@@ -8,6 +8,7 @@ import chaiAsPromised from "chai-as-promised";
 import chaiBigNumber from "chai-bignumber";
 import { TransactionReceipt, EventLog } from "web3-core/types";
 import { ERC20DetailedContract } from "../bindings/erc20_detailed";
+import { TimeContract } from "../bindings/time";
 
 const Time = artifacts.require("Time");
 
@@ -28,42 +29,29 @@ export const randomID = () => {
     return web3.utils.sha3(random().toString());
 };
 
-export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-export const second = 1000;
-
 export const secondsFromNow = async (seconds: number): Promise<BN> => {
-    const time = await Time.new();
+    const time = await Time.deployed();
     await time.newBlock();
     const currentTime = new BN(await time.currentTime());
     return currentTime.add(new BN(seconds));
 };
 
-// class Value {
-//     public value: BN;
-//     public unit: string;
+export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export const second = 1000;
 
-//     constructor(value: BN | string | number, unit: string) {
-//         this.value = new BN(value);
-//         this.unit = unit;
-//     }
-
-//     public sub(other: Value) {
-//         if (other.unit === this.unit) {
-//             return new Value(this.value.sub(other.value), other.unit);
-//         }
-
-//         return new Value(this.value, this.unit);
-//     }
-
-//     public add(other: Value) {
-//         if (other.unit === this.unit) {
-//             return new Value(this.value.add(other.value), other.unit);
-//         }
-
-//         return new Value(this.value, this.unit);
-//     }
-// }
+export const increaseTime = async (seconds: number) => {
+    await new Promise((resolve, reject) => {
+        web3.currentProvider.send(
+            { jsonrpc: "2.0", method: "evm_increaseTime", params: [seconds], id: 0 },
+            (err: any, value: any) => {
+                if (err) {
+                    reject(err);
+                }
+                resolve(value);
+            }
+        );
+    });
+};
 
 export const ETH = {
     address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
@@ -80,3 +68,8 @@ export async function getFee(txP: TxOut | Promise<TxOut>): Promise<BN> {
     const gasPrice = new BN((await web3.eth.getTransaction(tx.tx)).gasPrice);
     return gasPrice.mul(gasAmount);
 }
+
+export const subFees = (value: BN | number | string, fee: number): BN => {
+    value = new BN(value);
+    return value.sub((value.mul(new BN(fee))).div(new BN(1000)));
+};

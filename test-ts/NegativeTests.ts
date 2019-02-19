@@ -2,16 +2,11 @@ import BN from "bn.js";
 import HEX from "crypto-js/enc-hex";
 
 import { SHA256 } from "crypto-js";
-import { randomID, second, getFee, secondsFromNow, sleep, Ox0, ETH } from "./helper/testUtils";
+import { randomID, secondsFromNow, Ox0, ETH } from "./helper/testUtils";
 
 import { SwapInterfaceContract } from "./bindings/swap_interface";
 import { ERC20DetailedContract } from "./bindings/erc20_detailed";
 import { TestCase, testCases } from "./testCases";
-
-const subFees = (value: BN | number | string, fee: number): BN => {
-    value = new BN(value);
-    return value.sub((value.mul(new BN(fee))).div(new BN(1000)));
-};
 
 const testContract = (testCase: TestCase) => {
     contract(testCase.name, (accounts: string[]) => {
