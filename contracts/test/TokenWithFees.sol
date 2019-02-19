@@ -18,16 +18,15 @@ contract TokenWithFees is ERC20, ERC20Detailed("Token With Fees", "FEE", 18),
 
     function transfer(address to, uint256 value) public returns (bool) {
         uint256 fee = (value * 3) / 1000;
-        super.transfer(feeRecipient, fee);
-        return super.transfer(to, value - fee);
+        super.transfer(to, value);
+        super._burn(to, fee);
+        return true;
     }
 
     function transferFrom(address from, address to, uint256 value) public returns (bool) {
         uint256 fee = (value * 3) / 1000;
-
-        super._burn(from, value);
-        super._mint(to, value - fee);
-
+        super.transferFrom(from, to, value);
+        super._burn(to, fee);
         return true;
     }
 }
