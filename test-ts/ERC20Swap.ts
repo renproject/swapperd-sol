@@ -1,3 +1,4 @@
+
 import BN from "bn.js";
 import HEX from "crypto-js/enc-hex";
 
@@ -136,24 +137,20 @@ contract("ERC20Swap", function (accounts: string[]) {
         await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), 100000, { from: alice });
         await wbtc.approve(swapperd.address, 100000, { from: alice });
         await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), 100000, { from: alice })
-            .should.be.rejectedWith(null, /revert/);
-        // .should.be.rejectedWith(null, /swap opened previously/);
+            .should.be.rejectedWith(null, /((revert)|(swap opened previously))\.?$/);
 
         await swapperd.auditSecret(swapID)
-            .should.be.rejectedWith(null, /revert/);
+            .should.be.rejectedWith(null, /((revert)|(swap not redeemed))\.?$/);
 
         await swapperd.refund(swapID, { from: alice })
-            .should.be.rejectedWith(null, /revert/);
-        // .should.be.rejectedWith(null, /swap not expirable/);
+            .should.be.rejectedWith(null, /((revert)|(swap not expirable))\.?$/);
 
         // Can only redeem for OPEN swaps and with valid key
         await swapperd.redeem(swapID, bob, secretLock, { from: bob })
-            .should.be.rejectedWith(null, /revert/);
-        // .should.be.rejectedWith(null, /invalid secret/);
+            .should.be.rejectedWith(null, /((revert)|(invalid secret))\.?$/);
         await swapperd.redeem(swapID, bob, secret, { from: bob });
         await swapperd.redeem(swapID, bob, secret, { from: bob })
-            .should.be.rejectedWith(null, /revert/);
-        // .should.be.rejectedWith(null, /swap not open/);
+            .should.be.rejectedWith(null, /((revert)|(swap not open))\.?$/);
     });
 
     it("can return details", async () => {

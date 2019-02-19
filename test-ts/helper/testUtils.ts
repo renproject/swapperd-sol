@@ -14,6 +14,8 @@ chai.use(chaiAsPromised);
 chai.use(chaiBigNumber(BigNumber));
 chai.should();
 
+export const NULL = "0x0000000000000000000000000000000000000000";
+export const Ox0 = NULL;
 
 var seed = 1;
 function random() {

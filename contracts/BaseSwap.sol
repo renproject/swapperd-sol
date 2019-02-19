@@ -118,7 +118,7 @@ contract BaseSwap {
     /// @param _receiver The receiver's address.
     /// @param _secretKey The secret of the atomic swap.
     function redeem(bytes32 _swapID, address payable _receiver, bytes32 _secretKey) public onlyOpenSwaps(_swapID) onlyWithSecretKey(_swapID, _secretKey) onlySpender(_swapID, msg.sender) {
-        require(_receiver != address(0x0));
+        require(_receiver != address(0x0), "invalid receiver");
 
         // Close the swap.
         swaps[_swapID].secretKey = _secretKey;
@@ -148,7 +148,7 @@ contract BaseSwap {
     ///
     /// @param _amount The withdrawal amount.
     function withdrawBrokerFees(uint256 _amount) public {
-        require(_amount <= brokerFees[msg.sender]);
+        require(_amount <= brokerFees[msg.sender], "insufficient withdrawable fees");
         brokerFees[msg.sender] -= _amount;
     }
 
