@@ -6,6 +6,7 @@ import BigNumber from "bignumber.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import chaiBigNumber from "chai-bignumber";
+import { TransactionReceipt, EventLog } from "web3-core/types";
 
 const Time = artifacts.require("Time");
 
@@ -35,7 +36,8 @@ export const secondsFromNow = async (seconds: number): Promise<BN> => {
     return currentTime.add(new BN(seconds));
 };
 
-export async function getFee(txP: Promise<{ receipt: any, tx: string; logs: any }>) {
+interface TxOut { receipt: TransactionReceipt; tx: string; logs: EventLog[]; }
+export async function getFee(txP: TxOut | Promise<TxOut>) {
     const tx = await txP;
     const gasAmount = new BN(tx.receipt.gasUsed);
     const gasPrice = new BN((await web3.eth.getTransaction(tx.tx)).gasPrice);

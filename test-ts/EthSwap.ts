@@ -4,19 +4,19 @@ import HEX from "crypto-js/enc-hex";
 import { SHA256 } from "crypto-js";
 import { randomID, second, getFee, secondsFromNow, sleep } from "./helper/testUtils";
 
-// import { EthSwapContract } from "./bindings/swapperd_eth";
+import { EthSwapContract } from "./bindings/eth_swap";
 
-const EthSwapContract = artifacts.require("EthSwapContract");
+const EthSwap = artifacts.require("EthSwap");
 
-contract("EthSwapContract", function (accounts: string[]) {
+contract("EthSwap", function (accounts: string[]) {
 
-    let swapperd: any;
+    let swapperd: EthSwapContract;
     const alice = accounts[1];
     const bob = accounts[2];
     const broker = accounts[3];
 
     before(async function () {
-        swapperd = await EthSwapContract.deployed();
+        swapperd = await EthSwap.deployed();
     });
 
     it("can perform atomic swap", async () => {

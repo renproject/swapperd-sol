@@ -1,13 +1,13 @@
 pragma solidity ^0.5.0;
 
-import "./interfaces/ISwapContract.sol";
-import "./BaseSwapContract.sol";
+import "./interfaces/SwapInterface.sol";
+import "./BaseSwap.sol";
 
-/// @notice EthSwapContract implements the RenEx atomic swapping interface
+/// @notice EthSwap implements the RenEx atomic swapping interface
 /// for Ether values. Does not support ERC20 tokens.
-contract EthSwapContract is ISwapContract, BaseSwapContract {
+contract EthSwap is SwapInterface, BaseSwap {
 
-    constructor(string memory _VERSION) BaseSwapContract(_VERSION) public {
+    constructor(string memory _VERSION) BaseSwap(_VERSION) public {
     }
 
     /// @notice Initiates the atomic swap with fees.
@@ -29,7 +29,7 @@ contract EthSwapContract is ISwapContract, BaseSwapContract {
         uint256 _value
     ) public payable {
         require(_value == msg.value && _value >= _brokerFee);
-        BaseSwapContract.initiateWithFees(
+        BaseSwap.initiateWithFees(
             _swapID,
             _spender,
             _broker,
@@ -55,7 +55,7 @@ contract EthSwapContract is ISwapContract, BaseSwapContract {
         uint256 _value
     ) public payable {
         require(_value == msg.value);
-        BaseSwapContract.initiateWithFees(
+        BaseSwap.initiateWithFees(
             _swapID,
             _spender,
             address(0x0),
@@ -72,25 +72,25 @@ contract EthSwapContract is ISwapContract, BaseSwapContract {
     /// @param _receiver The receiver's address.
     /// @param _secretKey The secret of the atomic swap.
     function redeem(bytes32 _swapID, address payable _receiver, bytes32 _secretKey) public {
-        BaseSwapContract.redeem(
+        BaseSwap.redeem(
             _swapID,
             _receiver,
             _secretKey
         );
 
         // Transfer the ETH funds from this contract to the receiver.
-        _receiver.transfer(BaseSwapContract.swaps[_swapID].value);
+        _receiver.transfer(BaseSwap.swaps[_swapID].value);
     }
 
     /// @notice Refunds an atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.
     function refund(bytes32 _swapID) public {
-        BaseSwapContract.refund(_swapID);
+        BaseSwap.refund(_swapID);
 
         // Transfer the ETH value from this contract back to the ETH trader.
-        BaseSwapContract.swaps[_swapID].funder.transfer(
-            BaseSwapContract.swaps[_swapID].value + BaseSwapContract.swaps[_swapID].brokerFee
+        BaseSwap.swaps[_swapID].funder.transfer(
+            BaseSwap.swaps[_swapID].value + BaseSwap.swaps[_swapID].brokerFee
         );
     }
 
@@ -98,7 +98,7 @@ contract EthSwapContract is ISwapContract, BaseSwapContract {
     ///
     /// @param _amount The withdrawal amount.
     function withdrawBrokerFees(uint256 _amount) public {
-        BaseSwapContract.withdrawBrokerFees(_amount);
+        BaseSwap.withdrawBrokerFees(_amount);
         msg.sender.transfer(_amount);
     }
 }

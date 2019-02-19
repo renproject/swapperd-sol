@@ -1,11 +1,11 @@
 pragma solidity ^0.5.0;
 
-import "./interfaces/ISwapContract.sol";
-import "./BaseSwapContract.sol";
+import "./interfaces/SwapInterface.sol";
+import "./BaseSwap.sol";
 import "./libraries/CompatibleERC20.sol";
 
-/// @notice ERC20SwapContract implements the ERC20SwapContract interface.
-contract ERC20SwapContract is ISwapContract, BaseSwapContract {
+/// @notice ERC20WithFeesSwap implements the ERC20WithFeesSwap interface.
+contract ERC20WithFeesSwap is SwapInterface, BaseSwap {
     using CompatibleERC20Functions for CompatibleERC20;
 
     address public TOKEN_ADDRESS; // Address of the ERC20 contract. Passed in as a constructor parameter
@@ -13,7 +13,7 @@ contract ERC20SwapContract is ISwapContract, BaseSwapContract {
     /// @notice The contract constructor.
     ///
     /// @param _VERSION A string defining the contract version.
-    constructor(string memory _VERSION, address _TOKEN_ADDRESS) BaseSwapContract(_VERSION) public {
+    constructor(string memory _VERSION, address _TOKEN_ADDRESS) BaseSwap(_VERSION) public {
         TOKEN_ADDRESS = _TOKEN_ADDRESS;
     }
 
@@ -39,16 +39,16 @@ contract ERC20SwapContract is ISwapContract, BaseSwapContract {
         // TODO: Initiator will first need to call
         // ERC20(TOKEN_ADDRESS).approve(address(this), _value)
         // before this contract can make transfers on the initiator's behalf.
-        CompatibleERC20(TOKEN_ADDRESS).safeTransferFrom(msg.sender, address(this), _value);
-
-        BaseSwapContract.initiateWithFees(
+        uint256 value = CompatibleERC20(TOKEN_ADDRESS).safeTransferFromWithFees(msg.sender, address(this), _value);
+        
+        BaseSwap.initiateWithFees(
             _swapID,
             _spender,
             address(0x0),
             0,
             _secretLock,
             _timelock,
-            _value
+            value
         );
     }
 
@@ -78,17 +78,17 @@ contract ERC20SwapContract is ISwapContract, BaseSwapContract {
         // TODO: Initiator will first need to call
         // ERC20(TOKEN_ADDRESS).approve(address(this), _value)
         // before this contract can make transfers on the initiator's behalf.
-        CompatibleERC20(TOKEN_ADDRESS).safeTransferFrom(msg.sender, address(this), _value);
-        require(_broker != address(0x0) && _brokerFee != 0);
+        uint256 value = CompatibleERC20(TOKEN_ADDRESS).safeTransferFromWithFees(msg.sender, address(this), _value);
+        require(_broker != address(0x0) && _brokerFee != 0, "broker and broker fee must be initiated");
 
-        BaseSwapContract.initiateWithFees(
+        BaseSwap.initiateWithFees(
             _swapID,
             _spender,
             _broker,
             _brokerFee,
             _secretLock,
             _timelock,
-            _value
+            value
         );
     }
 
@@ -97,21 +97,21 @@ contract ERC20SwapContract is ISwapContract, BaseSwapContract {
     /// @param _swapID The unique atomic swap id.
     /// @param _secretKey The secret of the atomic swap.
     function redeem(bytes32 _swapID, address payable _receiver, bytes32 _secretKey) public {
-        BaseSwapContract.redeem(
+        BaseSwap.redeem(
             _swapID,
             _receiver,
             _secretKey
         );
 
         // Transfer the ERC20 funds from this contract to the withdrawing trader.
-        CompatibleERC20(TOKEN_ADDRESS).safeTransfer(swaps[_swapID].spender, swaps[_swapID].value);
+        CompatibleERC20(TOKEN_ADDRESS).safeTransfer(_receiver, swaps[_swapID].value);
     }
 
     /// @notice Refunds an atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.
     function refund(bytes32 _swapID) public {
-        BaseSwapContract.refund(_swapID);
+        BaseSwap.refund(_swapID);
 
         // Transfer the ERC20 value from this contract back to the funding trader.
         CompatibleERC20(TOKEN_ADDRESS).safeTransfer(swaps[_swapID].funder, swaps[_swapID].value + swaps[_swapID].brokerFee);
@@ -121,8 +121,8 @@ contract ERC20SwapContract is ISwapContract, BaseSwapContract {
     ///
     /// @param _amount The withdrawal amount.
     function withdrawBrokerFees(uint256 _amount) public {
-        BaseSwapContract.withdrawBrokerFees(_amount);
-
+        BaseSwap.withdrawBrokerFees(_amount);
+        
         CompatibleERC20(TOKEN_ADDRESS).safeTransfer(msg.sender, _amount);
     }
 }

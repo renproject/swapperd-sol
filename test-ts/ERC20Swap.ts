@@ -3,20 +3,22 @@ import HEX from "crypto-js/enc-hex";
 
 import { SHA256 } from "crypto-js";
 import { randomID, second, secondsFromNow, sleep } from "./helper/testUtils";
+import { ERC20SwapContract } from "./bindings/erc20_swap";
+import { WBTCContract } from "./bindings/wbtc";
 
-const ERC20SwapContract = artifacts.require("ERC20SwapContract");
+const ERC20Swap = artifacts.require("ERC20Swap");
 const WBTC = artifacts.require("WBTC");
 
-contract("ERC20SwapContract", function (accounts: string[]) {
+contract("ERC20Swap", function (accounts: string[]) {
 
-    let swapperd: any;
-    let wbtc: any;
+    let swapperd: ERC20SwapContract;
+    let wbtc: WBTCContract;
     const alice = accounts[1];
     const bob = accounts[2];
     const broker = accounts[3];
 
     before(async function () {
-        swapperd = await ERC20SwapContract.deployed();
+        swapperd = await ERC20Swap.deployed();
         wbtc = await WBTC.deployed();
         await wbtc.transfer(alice, 100000000);
     });

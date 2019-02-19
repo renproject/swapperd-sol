@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-interface ISwapContract {
+interface SwapInterface {
     /// @notice Initiates the atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.

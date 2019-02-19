@@ -15,7 +15,7 @@
     "testnet": "npm run merge ./.merged/testnet && truffle migrate --network testnet --reset",
     "mainnet": "npm run merge ./.merged/mainnet && truffle migrate --network mainnet --reset",
     "verify": "truffle migrate --network verify --reset",
-    "bindings": "# truffle compile && ./node_modules/.bin/abi-gen --abis 'build/contracts/*.json' --output ./test-ts/bindings --template './test-ts/bindings/templates/contract.handlebars' --partials './test-ts/bindings/templates/partials/*.handlebars' 1> /dev/null"
+    "bindings": "truffle compile && ./node_modules/.bin/abi-gen --abis 'build/contracts/*.json' --output ./test-ts/bindings --template './test-ts/bindings/templates/contract.handlebars' --partials './test-ts/bindings/templates/partials/*.handlebars' 1> /dev/null"
   },
   "repository": {
     "type": "git",

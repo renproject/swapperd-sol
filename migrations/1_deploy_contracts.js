@@ -1,7 +1,7 @@
 /// <reference types="../test-ts/typings/truffle" />
 
-const EthSwapContract = artifacts.require("EthSwapContract");
-const ERC20SwapContract = artifacts.require("ERC20SwapContract");
+const EthSwap = artifacts.require("EthSwap");
+const ERC20Swap = artifacts.require("ERC20Swap");
 const WBTC = artifacts.require("WBTC");
 
 // const RepublicToken = artifacts.require("RepublicToken");
@@ -16,7 +16,7 @@ module.exports = async function (deployer, network, accounts) {
     await deployer
 
         .then(() => deployer.deploy(
-            EthSwapContract,
+            EthSwap,
             VERSION_STRING,
         ))
 
@@ -25,7 +25,7 @@ module.exports = async function (deployer, network, accounts) {
         // ))
 
         // .then(() => deployer.deploy(
-        //     ERC20SwapContract,
+        //     ERC20Swap,
         //     VERSION_STRING,
         //     RepublicToken,
         // ))
@@ -40,7 +40,7 @@ module.exports = async function (deployer, network, accounts) {
         })
 
         .then(() => deployer.deploy(
-            ERC20SwapContract,
+            ERC20Swap,
             VERSION_STRING,
             WBTC.address,
         ));

@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-contract BaseSwapContract {
+contract BaseSwap {
     string public VERSION; // Passed in as a constructor parameter.
 
     struct Swap {
