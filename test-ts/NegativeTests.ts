@@ -2,7 +2,7 @@ import BN from "bn.js";
 import HEX from "crypto-js/enc-hex";
 
 import { SHA256 } from "crypto-js";
-import { randomID, secondsFromNow, Ox0, ETH, NO_TOKEN } from "./helper/testUtils";
+import { randomID, secondsFromNow, Ox0, ETH } from "./helper/testUtils";
 
 import { SwapInterfaceContract } from "./bindings/swap_interface";
 import { ERC20DetailedContract } from "./bindings/erc20_detailed";

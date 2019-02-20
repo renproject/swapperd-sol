@@ -175,6 +175,21 @@ const testContract = (testCase: TestCase) => {
             aliceRefunded.should.bignumber.equal(expectedFinal);
         }));
 
+        it("can withdraw broker fees", skip(["BaseSwap"], async () => {
+            const fees = await swapperd.brokerFees(broker);
+            const feesAfter1Tx = subFees(fees, testDetails.transferFees);
+
+            await swapperd.withdrawBrokerFees(new BN(fees).add(new BN(1)), { from: broker })
+                .should.be.rejectedWith(null, /((revert)|(insufficient withdrawable fees))\.?$/);
+
+            const brokerInitial = new BN(await token.balanceOf(broker));
+
+            const tx = await swapperd.withdrawBrokerFees(fees, { from: broker });
+            const brokerFinal = new BN(await token.balanceOf(broker));
+            const txFees = token === ETH ? await getFee(tx) : new BN(0);
+            brokerFinal.sub(brokerInitial).add(txFees).should.bignumber.equal(feesAfter1Tx);
+        }));
+
         it("can return details", async () => {
             const swapID = randomID(), secret = randomID();
             const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
@@ -229,21 +244,6 @@ const testContract = (testCase: TestCase) => {
             (await swapperd.redeemedAt(swapID))
                 .should.bignumber.equal(now);
         });
-
-        it("can withdraw broker fees", skip(["BaseSwap"], async () => {
-            const fees = await swapperd.brokerFees(broker);
-            const feesAfter1Tx = subFees(fees, testDetails.transferFees);
-
-            await swapperd.withdrawBrokerFees(new BN(fees).add(new BN(1)), { from: broker })
-                .should.be.rejectedWith(null, /((revert)|(insufficient withdrawable fees))\.?$/);
-
-            const brokerInitial = new BN(await token.balanceOf(broker));
-
-            const tx = await swapperd.withdrawBrokerFees(fees, { from: broker });
-            const brokerFinal = new BN(await token.balanceOf(broker));
-            const txFees = token === ETH ? await getFee(tx) : new BN(0);
-            brokerFinal.sub(brokerInitial).add(txFees).should.bignumber.equal(feesAfter1Tx);
-        }));
     });
 };
 
