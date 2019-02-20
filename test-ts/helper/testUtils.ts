@@ -61,6 +61,15 @@ export const ETH = {
     balanceOf: async (address: string): Promise<BN | string | number> => web3.eth.getBalance(address),
 } as any as ERC20DetailedContract;
 
+export const NO_TOKEN = {
+    address: NULL,
+    decimals: async () => 0,
+    approve: async (_to: string, _value: BN | string | number): Promise<void> => null,
+    transfer: async (_to: string, _value: BN | string | number): Promise<void> => null,
+    balanceOf: async (_address: string): Promise<BN | string | number> => 0,
+} as any as ERC20DetailedContract;
+
+
 interface TxOut { receipt: TransactionReceipt; tx: string; logs: EventLog[]; }
 export async function getFee(txP: TxOut | Promise<TxOut>): Promise<BN> {
     const tx = await txP;

@@ -74,7 +74,7 @@ contract BaseSwap is SwapInterface {
     /// @notice The contract constructor.
     ///
     /// @param _VERSION A string defining the contract version.
-    constructor(string memory _VERSION) internal {
+    constructor(string memory _VERSION) public {
         VERSION = _VERSION;
     }
 

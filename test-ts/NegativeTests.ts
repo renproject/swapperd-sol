@@ -2,15 +2,18 @@ import BN from "bn.js";
 import HEX from "crypto-js/enc-hex";
 
 import { SHA256 } from "crypto-js";
-import { randomID, secondsFromNow, Ox0, ETH } from "./helper/testUtils";
+import { randomID, secondsFromNow, Ox0, ETH, NO_TOKEN } from "./helper/testUtils";
 
 import { SwapInterfaceContract } from "./bindings/swap_interface";
 import { ERC20DetailedContract } from "./bindings/erc20_detailed";
-import { TestCase, testCases } from "./testCases";
+import { TestCase, testCases, TestCaseDetails } from "./testCases";
 
 const testContract = (testCase: TestCase) => {
+    const skip = (skips: any[], inner: any) => (skips.indexOf(testCase.name) === -1) ? inner : () => { };
+
     contract(testCase.name, (accounts: string[]) => {
 
+        let testDetails: TestCaseDetails;
         let swapperd: SwapInterfaceContract;
         let token: ERC20DetailedContract;
         const alice = accounts[1];
@@ -18,8 +21,9 @@ const testContract = (testCase: TestCase) => {
         const broker = accounts[3];
 
         before(async function () {
-            swapperd = await testCase.swapperd;
-            token = await testCase.token;
+            testDetails = await testCase.details();
+            swapperd = testDetails.swapperd;
+            token = testDetails.token;
 
             const decimals = new BN(await token.decimals());
             await token.transfer(alice, new BN(10).pow(decimals));
@@ -80,7 +84,8 @@ const testContract = (testCase: TestCase) => {
                 .should.be.rejectedWith(null, /((revert)|(fee must be less than value))\.?$/);
         });
 
-        it("eth amount must match value", async () => {
+
+        it("eth amount must match value", skip(["BaseSwap"], async () => {
             const swapID = randomID(), secret = randomID();
             const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
 
@@ -89,11 +94,13 @@ const testContract = (testCase: TestCase) => {
             await token.approve(swapperd.address, value - 1, { from: alice });
             await swapperd.initiate(swapID, bob, secretLock, await secondsFromNow(2), value, { from: alice, value: token === ETH ? value - 1 : 0 })
                 .should.be.rejectedWith(null, /((revert)|(eth amount must match value))\.?$/);
-        });
 
-        it("can't send eth for token swap", async () => {
-            if (token === ETH) { return; }
+            await token.approve(swapperd.address, value - 1, { from: alice });
+            await swapperd.initiateWithFees(swapID, bob, broker, 0, secretLock, await secondsFromNow(2), value, { from: alice, value: token === ETH ? value - 1 : 0 })
+                .should.be.rejectedWith(null, /((revert)|(eth amount must match value))\.?$/);
+        }));
 
+        it("can't send eth for token swap", skip(["EthSwap", "BaseSwap"], async () => {
             const swapID = randomID(), secret = randomID();
             const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
 
@@ -104,7 +111,7 @@ const testContract = (testCase: TestCase) => {
 
             await swapperd.initiateWithFees(swapID, bob, broker, 200, secretLock, await secondsFromNow(2), value, { from: alice, value: value })
                 .should.be.rejectedWith(null, /((revert)|(eth value must be zero))\.?$/);
-        });
+        }));
     });
 };
 

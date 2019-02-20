@@ -6,11 +6,14 @@ import { randomID, getFee, secondsFromNow, ETH, subFees, increaseTime } from "./
 
 import { SwapInterfaceContract } from "./bindings/swap_interface";
 import { ERC20DetailedContract } from "./bindings/erc20_detailed";
-import { TestCase, testCases } from "./testCases";
+import { TestCase, testCases, TestCaseDetails } from "./testCases";
 
 const testContract = (testCase: TestCase) => {
+    const skip = (skips: any[], inner: any) => (skips.indexOf(testCase.name) === -1) ? inner : () => { };
+
     contract(testCase.name, (accounts: string[]) => {
 
+        let testDetails: TestCaseDetails;
         let swapperd: SwapInterfaceContract;
         let token: ERC20DetailedContract;
         const alice = accounts[1];
@@ -18,22 +21,23 @@ const testContract = (testCase: TestCase) => {
         const broker = accounts[3];
 
         before(async function () {
-            swapperd = await testCase.swapperd;
-            token = await testCase.token;
+            testDetails = await testCase.details();
+            swapperd = testDetails.swapperd;
+            token = testDetails.token;
 
             const decimals = new BN(await token.decimals());
             await token.transfer(alice, new BN(10).pow(decimals));
         });
 
-        it("can perform atomic swap", async () => {
+        it("can perform atomic swap", skip(["BaseSwap"], async () => {
 
             const swapID = randomID(), secret = randomID();
             const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
             const timeLock = await secondsFromNow(60 * 60 * 24);
 
             const value = 1000;
-            const valueAfter1Tx = subFees(value, testCase.transferFees);
-            const valueAfter2Tx = subFees(valueAfter1Tx, testCase.transferFees);
+            const valueAfter1Tx = subFees(value, testDetails.transferFees);
+            const valueAfter2Tx = subFees(valueAfter1Tx, testDetails.transferFees);
 
             const aliceInitial = new BN(await token.balanceOf(alice));
             await token.approve(swapperd.address, value, { from: alice });
@@ -63,17 +67,17 @@ const testContract = (testCase: TestCase) => {
                 .should.bignumber.equal(valueAfter2Tx);
 
             await swapperd.auditSecret(swapID);
-        });
+        }));
 
-        it("can perform atomic swap with fees", async () => {
+        it("can perform atomic swap with fees", skip(["BaseSwap"], async () => {
             const swapID = randomID(), secret = randomID();
             const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
             const timeLock = await secondsFromNow(60 * 60 * 24)
 
             const value = 100000;
             const brokerFee = 200;
-            const valueAfter1Tx = subFees(value, testCase.transferFees).sub(new BN(brokerFee));
-            const valueAfter2Tx = subFees(valueAfter1Tx, testCase.transferFees);
+            const valueAfter1Tx = subFees(value, testDetails.transferFees).sub(new BN(brokerFee));
+            const valueAfter2Tx = subFees(valueAfter1Tx, testDetails.transferFees);
 
             const aliceInitial = new BN(await token.balanceOf(alice));
             await token.approve(swapperd.address, value, { from: alice });
@@ -100,16 +104,16 @@ const testContract = (testCase: TestCase) => {
             bobFinal.sub(bobInitial).add(redeemTxFee).should.bignumber.equal(valueAfter2Tx);
 
             await swapperd.auditSecret(swapID);
-        });
+        }));
 
-        it("can refund an atomic swap", async () => {
+        it("can refund an atomic swap", skip(["BaseSwap"], async () => {
             const swapID = randomID(), secret = randomID();
             const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
             const timeLock = await secondsFromNow(0);
 
             const value = new BN(100000);
-            const valueAfter1Tx = subFees(value, testCase.transferFees);
-            const valueAfter2Tx = subFees(valueAfter1Tx, testCase.transferFees);
+            const valueAfter1Tx = subFees(value, testDetails.transferFees);
+            const valueAfter2Tx = subFees(valueAfter1Tx, testDetails.transferFees);
 
             const aliceInitial = new BN(await token.balanceOf(alice));
             await token.approve(swapperd.address, value, { from: alice });
@@ -134,17 +138,17 @@ const testContract = (testCase: TestCase) => {
                 .sub(valueAfter1Tx.sub(valueAfter2Tx));
 
             aliceRefunded.should.bignumber.equal(expectedFinal);
-        });
+        }));
 
-        it("can refund an atomic swap with fees", async () => {
+        it("can refund an atomic swap with fees", skip(["BaseSwap"], async () => {
             const swapID = randomID(), secret = randomID();
             const secretLock = `0x${SHA256(HEX.parse(secret.slice(2))).toString()}`;
             const timeLock = await secondsFromNow(0);
 
             const value = new BN(100000);
             const brokerFee = 200;
-            const valueAfter1Tx = subFees(value, testCase.transferFees);
-            const valueAfter2Tx = subFees(valueAfter1Tx, testCase.transferFees);
+            const valueAfter1Tx = subFees(value, testDetails.transferFees);
+            const valueAfter2Tx = subFees(valueAfter1Tx, testDetails.transferFees);
 
             const aliceInitial = new BN(await token.balanceOf(alice));
             await token.approve(swapperd.address, value, { from: alice });
@@ -169,7 +173,7 @@ const testContract = (testCase: TestCase) => {
                 .sub(valueAfter1Tx.sub(valueAfter2Tx));
 
             aliceRefunded.should.bignumber.equal(expectedFinal);
-        });
+        }));
 
         it("can return details", async () => {
             const swapID = randomID(), secret = randomID();
@@ -226,9 +230,9 @@ const testContract = (testCase: TestCase) => {
                 .should.bignumber.equal(now);
         });
 
-        it("can withdraw broker fees", async () => {
+        it("can withdraw broker fees", skip(["BaseSwap"], async () => {
             const fees = await swapperd.brokerFees(broker);
-            const feesAfter1Tx = subFees(fees, testCase.transferFees);
+            const feesAfter1Tx = subFees(fees, testDetails.transferFees);
 
             await swapperd.withdrawBrokerFees(new BN(fees).add(new BN(1)), { from: broker })
                 .should.be.rejectedWith(null, /((revert)|(insufficient withdrawable fees))\.?$/);
@@ -239,7 +243,7 @@ const testContract = (testCase: TestCase) => {
             const brokerFinal = new BN(await token.balanceOf(broker));
             const txFees = token === ETH ? await getFee(tx) : new BN(0);
             brokerFinal.sub(brokerInitial).add(txFees).should.bignumber.equal(feesAfter1Tx);
-        });
+        }));
     });
 };
 
