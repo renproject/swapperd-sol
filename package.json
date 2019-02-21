@@ -50,7 +50,7 @@
     "solc-js": "^0.5.5",
     "solidity-coverage": "leapdao/solidity-coverage",
     "truffle": "^5.0.4",
-    "truffle-hdwallet-provider": "1.0.4",
+    "truffle-hdwallet-provider": "^1.0.4",
     "tslint": "^5.12.1",
     "tslint-react": "^3.6.0",
     "typescript": "^3.3.3",

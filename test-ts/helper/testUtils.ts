@@ -30,7 +30,17 @@ export const randomID = () => {
 };
 
 export const secondsFromNow = async (seconds: number): Promise<BN> => {
-    const time = await Time.deployed();
+    let time;
+    try {
+        time = await Time.deployed();
+    } catch (error) {
+        if (error.message.match(/Time has not been deployed/)) {
+            time = await Time.new();
+        } else {
+            throw error;
+        }
+    }
+
     await time.newBlock();
     const currentTime = new BN(await time.currentTime());
     return currentTime.add(new BN(seconds));
