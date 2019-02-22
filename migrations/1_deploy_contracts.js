@@ -1,45 +1,40 @@
-const SwapperdEth = artifacts.require("SwapperdEth");
-const SwapperdERC20 = artifacts.require("SwapperdERC20");
-const WBTC = artifacts.require("WBTC");
+/// <reference types="../test-ts/typings/truffle" />
 
-// const RepublicToken = artifacts.require("RepublicToken");
+const Time = artifacts.require("Time");
+const EthSwap = artifacts.require("EthSwap");
+const ERC20Swap = artifacts.require("ERC20Swap");
+const ERC20WithFeesSwap = artifacts.require("ERC20WithFeesSwap");
 
-const config = require("./config.js");
+module.exports = async function (deployer, network, _accounts) {
+    const config = require("./config.js")(network);
 
-module.exports = async function (deployer, network, accounts) {
+    if (network === "development") {
+        return;
+    }
 
-    const VERSION_STRING = `${network}-${config.VERSION}`;
-    const deployerAddress = accounts[0];
+    const ETHSwap = await deployer.deploy(EthSwap, config.VERSION);
+    const WBTCSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.WBTC);
+    const RENSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.REN);
+    const TUSDSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.TUSD);
+    const OMGSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.OMG);
+    const ZRXSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.ZRX);
+    const DGXSwap = await deployer.deploy(ERC20WithFeesSwap, config.VERSION, config.TOKENS.DGX);
+    const USDCSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.USDC);
+    const GUSDSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.GUSD);
+    const DAISwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.DAI);
+    const PAXSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.PAX);
 
-    await deployer
-
-        .then(() => deployer.deploy(
-            SwapperdEth,
-            VERSION_STRING,
-        ))
-
-        // .then(() => deployer.deploy(
-        //     RepublicToken,
-        // ))
-
-        // .then(() => deployer.deploy(
-        //     SwapperdERC20,
-        //     VERSION_STRING,
-        //     RepublicToken,
-        // ))
-
-        .then(() => deployer.deploy(
-            WBTC,
-        ))
-
-        .then(async () => {
-            const wbtc = await WBTC.at(WBTC.address);
-            await wbtc.mint(deployerAddress, 10000000000);
-        })
-
-        .then(() => deployer.deploy(
-            SwapperdERC20,
-            VERSION_STRING,
-            WBTC.address,
-        ));
+    console.log(JSON.stringify({
+        ETHSwap: ETHSwap ? ETHSwap.address : "",
+        WBTCSwap: WBTCSwap ? WBTCSwap.address : "",
+        RENSwap: RENSwap ? RENSwap.address : "",
+        TUSDSwap: TUSDSwap ? TUSDSwap.address : "",
+        OMGSwap: OMGSwap ? OMGSwap.address : "",
+        ZRXSwap: ZRXSwap ? ZRXSwap.address : "",
+        DGXSwap: DGXSwap ? DGXSwap.address : "",
+        USDCSwap: USDCSwap ? USDCSwap.address : "",
+        GUSDSwap: GUSDSwap ? GUSDSwap.address : "",
+        DAISwap: DAISwap ? DAISwap.address : "",
+        PAXSwap: PAXSwap ? PAXSwap.address : "",
+    }, undefined, "    "))
 }

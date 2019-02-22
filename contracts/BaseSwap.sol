@@ -1,24 +1,9 @@
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.0;
 
-interface CompatibleERC20 {
-    // Modified to not return boolean
-    function transfer(address to, uint256 value) external;
-    function transferFrom(address from, address to, uint256 value) external;
-    function approve(address spender, uint256 value) external;
+import "./interfaces/SwapInterface.sol";
 
-    // Not modifier
-    function totalSupply() external view returns (uint256);
-    function balanceOf(address who) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-/// @notice SwapperdERC20 implements the RenEx atomic swapping interface
-/// for Ether values. Does not support ERC20 tokens.
-contract SwapperdERC20 {
+contract BaseSwap is SwapInterface {
     string public VERSION; // Passed in as a constructor parameter.
-    address public TOKEN_ADDRESS; // Address of the ERC20 contract. Passed in as a constructor parameter
 
     struct Swap {
         uint256 timelock;
@@ -26,9 +11,9 @@ contract SwapperdERC20 {
         uint256 brokerFee;
         bytes32 secretLock;
         bytes32 secretKey;
-        address funder;
-        address spender;
-        address broker;
+        address payable funder;
+        address payable spender;
+        address payable broker;
     }
 
     enum States {
@@ -44,26 +29,26 @@ contract SwapperdERC20 {
     event LogClose(bytes32 _swapID, bytes32 _secretKey);
 
     // Storage
-    mapping (bytes32 => Swap) private swaps;
-    mapping (bytes32 => States) private swapStates;
-    mapping (address => uint256) public brokerFees;
-    mapping (bytes32 => uint256) public redeemedAt;
+    mapping (bytes32 => Swap) internal swaps;
+    mapping (bytes32 => States) private _swapStates;
+    mapping (address => uint256) private _brokerFees;
+    mapping (bytes32 => uint256) private _redeemedAt;
 
     /// @notice Throws if the swap is not invalid (i.e. has already been opened)
     modifier onlyInvalidSwaps(bytes32 _swapID) {
-        require(swapStates[_swapID] == States.INVALID, "swap opened previously");
+        require(_swapStates[_swapID] == States.INVALID, "swap opened previously");
         _;
     }
 
     /// @notice Throws if the swap is not open.
     modifier onlyOpenSwaps(bytes32 _swapID) {
-        require(swapStates[_swapID] == States.OPEN, "swap not open");
+        require(_swapStates[_swapID] == States.OPEN, "swap not open");
         _;
     }
 
     /// @notice Throws if the swap is not closed.
     modifier onlyClosedSwaps(bytes32 _swapID) {
-        require(swapStates[_swapID] == States.CLOSED, "swap not redeemed");
+        require(_swapStates[_swapID] == States.CLOSED, "swap not redeemed");
         _;
     }
 
@@ -80,15 +65,20 @@ contract SwapperdERC20 {
         _;
     }
 
+    /// @notice Throws if the caller is not the authorized spender.
+    modifier onlySpender(bytes32 _swapID, address _spender) {
+        require(swaps[_swapID].spender == _spender, "unauthorized spender");
+        _;
+    }
+
     /// @notice The contract constructor.
     ///
     /// @param _VERSION A string defining the contract version.
-    constructor(string memory _VERSION, address _TOKEN_ADDRESS) public {
+    constructor(string memory _VERSION) public {
         VERSION = _VERSION;
-        TOKEN_ADDRESS = _TOKEN_ADDRESS;
     }
 
-/// @notice Initiates the atomic swap.
+    /// @notice Initiates the atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.
     /// @param _spender The address of the withdrawing trader.
@@ -97,36 +87,30 @@ contract SwapperdERC20 {
     /// @param _value The value of the atomic swap.
     function initiate(
         bytes32 _swapID,
-        address _spender,
+        address payable _spender,
         bytes32 _secretLock,
         uint256 _timelock,
         uint256 _value
-    ) external onlyInvalidSwaps(_swapID) {
-        // Transfer the token to the contract
-        // TODO: Initiator will first need to call
-        // ERC20(TOKEN_ADDRESS).approve(address(this), _value)
-        // before this contract can make transfers on the initiator's behalf.
-        CompatibleERC20(TOKEN_ADDRESS).transferFrom(msg.sender, address(this), _value);
-
+    ) public onlyInvalidSwaps(_swapID) payable {
         // Store the details of the swap.
         Swap memory swap = Swap({
             timelock: _timelock,
+            brokerFee: 0,
             value: _value,
             funder: msg.sender,
             spender: _spender,
             broker: address(0x0),
-            brokerFee: 0,
             secretLock: _secretLock,
             secretKey: 0x0
         });
         swaps[_swapID] = swap;
-        swapStates[_swapID] = States.OPEN;
+        _swapStates[_swapID] = States.OPEN;
 
         // Logs open event
         emit LogOpen(_swapID, _spender, _secretLock);
     }
 
-    /// @notice Initiates the atomic swap with broker fees.
+    /// @notice Initiates the atomic swap with fees.
     ///
     /// @param _swapID The unique atomic swap id.
     /// @param _spender The address of the withdrawing trader.
@@ -137,33 +121,28 @@ contract SwapperdERC20 {
     /// @param _value The value of the atomic swap.
     function initiateWithFees(
         bytes32 _swapID,
-        address _spender,
-        address _broker,
+        address payable _spender,
+        address payable _broker,
         uint256 _brokerFee,
         bytes32 _secretLock,
         uint256 _timelock,
         uint256 _value
-    ) external onlyInvalidSwaps(_swapID) {
-        // Transfer the token to the contract
-        // TODO: Initiator will first need to call
-        // ERC20(TOKEN_ADDRESS).approve(address(this), _value)
-        // before this contract can make transfers on the initiator's behalf.
-        CompatibleERC20(TOKEN_ADDRESS).transferFrom(msg.sender, address(this), _value);
-        require(_broker != address(0x0) && _brokerFee != 0);
+    ) public onlyInvalidSwaps(_swapID) payable {
+        require(_value >= _brokerFee, "fee must be less than value");
 
         // Store the details of the swap.
         Swap memory swap = Swap({
             timelock: _timelock,
+            brokerFee: _brokerFee,
             value: _value - _brokerFee,
             funder: msg.sender,
             spender: _spender,
             broker: _broker,
-            brokerFee: _brokerFee,
             secretLock: _secretLock,
             secretKey: 0x0
         });
         swaps[_swapID] = swap;
-        swapStates[_swapID] = States.OPEN;
+        _swapStates[_swapID] = States.OPEN;
 
         // Logs open event
         emit LogOpen(_swapID, _spender, _secretLock);
@@ -172,19 +151,19 @@ contract SwapperdERC20 {
     /// @notice Redeems an atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.
+    /// @param _receiver The receiver's address.
     /// @param _secretKey The secret of the atomic swap.
-    function redeem(bytes32 _swapID, bytes32 _secretKey) external onlyOpenSwaps(_swapID) onlyWithSecretKey(_swapID, _secretKey) {
+    function redeem(bytes32 _swapID, address payable _receiver, bytes32 _secretKey) public onlyOpenSwaps(_swapID) onlyWithSecretKey(_swapID, _secretKey) onlySpender(_swapID, msg.sender) {
+        require(_receiver != address(0x0), "invalid receiver");
+
         // Close the swap.
         swaps[_swapID].secretKey = _secretKey;
-        swapStates[_swapID] = States.CLOSED;
+        _swapStates[_swapID] = States.CLOSED;
         /* solium-disable-next-line security/no-block-members */
-        redeemedAt[_swapID] = now;
+        _redeemedAt[_swapID] = now;
 
-        // Transfer the ERC20 funds from this contract to the withdrawing trader.
-        CompatibleERC20(TOKEN_ADDRESS).transfer(swaps[_swapID].spender, swaps[_swapID].value);
-
-        // Transfer the ERC20 funds from this contract to the broker.
-        brokerFees[swaps[_swapID].broker] += swaps[_swapID].brokerFee;
+        // Update the broker fees to the broker.
+        _brokerFees[swaps[_swapID].broker] += swaps[_swapID].brokerFee;
 
         // Logs close event
         emit LogClose(_swapID, _secretKey);
@@ -193,12 +172,9 @@ contract SwapperdERC20 {
     /// @notice Refunds an atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.
-    function refund(bytes32 _swapID) external onlyOpenSwaps(_swapID) onlyExpirableSwaps(_swapID) {
+    function refund(bytes32 _swapID) public onlyOpenSwaps(_swapID) onlyExpirableSwaps(_swapID) {
         // Expire the swap.
-        swapStates[_swapID] = States.EXPIRED;
-
-        // Transfer the ERC20 value from this contract back to the funding trader.
-        CompatibleERC20(TOKEN_ADDRESS).transfer(swaps[_swapID].funder, swaps[_swapID].value + swaps[_swapID].brokerFee);
+        _swapStates[_swapID] = States.EXPIRED;
 
         // Logs expire event
         emit LogExpire(_swapID);
@@ -207,10 +183,9 @@ contract SwapperdERC20 {
     /// @notice Allows broker fee withdrawals.
     ///
     /// @param _amount The withdrawal amount.
-    function withdrawBrokerFees(uint256 _amount) external {
-        require(_amount <= brokerFees[msg.sender]);
-        brokerFees[msg.sender] -= _amount;
-        CompatibleERC20(TOKEN_ADDRESS).transfer(msg.sender, _amount);
+    function withdrawBrokerFees(uint256 _amount) public {
+        require(_amount <= _brokerFees[msg.sender], "insufficient withdrawable fees");
+        _brokerFees[msg.sender] -= _amount;
     }
 
     /// @notice Audits an atomic swap.
@@ -241,28 +216,36 @@ contract SwapperdERC20 {
     /// @param _swapID The unique atomic swap id.
     function refundable(bytes32 _swapID) external view returns (bool) {
         /* solium-disable-next-line security/no-block-members */
-        return (now >= swaps[_swapID].timelock && swapStates[_swapID] == States.OPEN);
+        return (now >= swaps[_swapID].timelock && _swapStates[_swapID] == States.OPEN);
     }
 
     /// @notice Checks whether a swap is initiatable or not.
     ///
     /// @param _swapID The unique atomic swap id.
     function initiatable(bytes32 _swapID) external view returns (bool) {
-        return (swapStates[_swapID] == States.INVALID);
+        return (_swapStates[_swapID] == States.INVALID);
     }
 
     /// @notice Checks whether a swap is redeemable or not.
     ///
     /// @param _swapID The unique atomic swap id.
     function redeemable(bytes32 _swapID) external view returns (bool) {
-        return (swapStates[_swapID] == States.OPEN);
+        return (_swapStates[_swapID] == States.OPEN);
+    }
+
+    function redeemedAt(bytes32 _swapID) external view returns (uint256) {
+        return _redeemedAt[_swapID];
+    }
+
+    function brokerFees(address _broker) external view returns (uint256) {
+        return _brokerFees[_broker];
     }
 
     /// @notice Generates a deterministic swap id using initiate swap details.
     ///
     /// @param _secretLock The hash of the secret.
     /// @param _timelock The expiry timestamp.
-    function swapID(bytes32 _secretLock, uint256 _timelock) public pure returns (bytes32) {
+    function swapID(bytes32 _secretLock, uint256 _timelock) external pure returns (bytes32) {
         return keccak256(abi.encodePacked(_secretLock, _timelock));
     }
 }
