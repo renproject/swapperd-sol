@@ -16,7 +16,7 @@ const KOVAN = (MNEMONIC) => ({
 const MAINNET = (MNEMONIC) => ({
     provider: MNEMONIC ? new HDWalletProvider(MNEMONIC, `https://mainnet.infura.io/v3/${process.env.INFURA_TOKEN}`) : undefined,
     network_id: 1,
-    gas: 6721975,
+    gas: 2000000,
     gasPrice: 10 * GWEI,
 });
 

@@ -46,6 +46,12 @@ interface SwapInterface {
     /// @param _secretKey The secret of the atomic swap.
     function redeem(bytes32 _swapID, address payable _receiver, bytes32 _secretKey) external;
 
+    /// @notice Redeems an atomic swap to the spender. Can be called by anyone.
+    ///
+    /// @param _swapID The unique atomic swap id.
+    /// @param _secretKey The secret of the atomic swap.
+    function redeemToSpender(bytes32 _swapID, bytes32 _secretKey) external;
+
     /// @notice Refunds an atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.

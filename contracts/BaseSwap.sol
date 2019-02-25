@@ -169,6 +169,24 @@ contract BaseSwap is SwapInterface {
         emit LogClose(_swapID, _secretKey);
     }
 
+    /// @notice Redeems an atomic swap to the spender. Can be called by anyone.
+    ///
+    /// @param _swapID The unique atomic swap id.
+    /// @param _secretKey The secret of the atomic swap.
+    function redeemToSpender(bytes32 _swapID, bytes32 _secretKey) public onlyOpenSwaps(_swapID) onlyWithSecretKey(_swapID, _secretKey) {
+        // Close the swap.
+        swaps[_swapID].secretKey = _secretKey;
+        _swapStates[_swapID] = States.CLOSED;
+        /* solium-disable-next-line security/no-block-members */
+        _redeemedAt[_swapID] = now;
+
+        // Update the broker fees to the broker.
+        _brokerFees[swaps[_swapID].broker] += swaps[_swapID].brokerFee;
+
+        // Logs close event
+        emit LogClose(_swapID, _secretKey);
+    }
+
     /// @notice Refunds an atomic swap.
     ///
     /// @param _swapID The unique atomic swap id.

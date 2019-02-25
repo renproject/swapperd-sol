@@ -34,6 +34,7 @@ contract ERC20Swap is SwapInterface, BaseSwap {
         // To abide by the interface, the function is payable but throws if
         // msg.value is non-zero
         require(msg.value == 0, "eth value must be zero");
+        require(_spender != address(0x0), "spender must not be zero");
 
         // Transfer the token to the contract
         // TODO: Initiator will first need to call
@@ -71,6 +72,7 @@ contract ERC20Swap is SwapInterface, BaseSwap {
         // To abide by the interface, the function is payable but throws if
         // msg.value is non-zero
         require(msg.value == 0, "eth value must be zero");
+        require(_spender != address(0x0), "spender must not be zero");
 
         // Transfer the token to the contract
         // TODO: Initiator will first need to call
@@ -97,6 +99,20 @@ contract ERC20Swap is SwapInterface, BaseSwap {
         BaseSwap.redeem(
             _swapID,
             _receiver,
+            _secretKey
+        );
+
+        // Transfer the ERC20 funds from this contract to the withdrawing trader.
+        CompatibleERC20(TOKEN_ADDRESS).safeTransfer(_receiver, swaps[_swapID].value);
+    }
+
+    /// @notice Redeems an atomic swap to the spender. Can be called by anyone.
+    ///
+    /// @param _swapID The unique atomic swap id.
+    /// @param _secretKey The secret of the atomic swap.
+    function redeemToSpender(bytes32 _swapID, bytes32 _secretKey) public {
+        BaseSwap.redeemToSpender(
+            _swapID,
             _secretKey
         );
 

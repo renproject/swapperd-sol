@@ -25,6 +25,7 @@ contract EthSwap is SwapInterface, BaseSwap {
         uint256 _value
     ) public payable {
         require(_value == msg.value, "eth amount must match value");
+        require(_spender != address(0x0), "spender must not be zero");
 
         BaseSwap.initiate(
             _swapID,
@@ -54,6 +55,7 @@ contract EthSwap is SwapInterface, BaseSwap {
         uint256 _value
     ) public payable {
         require(_value == msg.value, "eth amount must match value");
+        require(_spender != address(0x0), "spender must not be zero");
 
         BaseSwap.initiateWithFees(
             _swapID,
@@ -80,6 +82,20 @@ contract EthSwap is SwapInterface, BaseSwap {
 
         // Transfer the ETH funds from this contract to the receiver.
         _receiver.transfer(BaseSwap.swaps[_swapID].value);
+    }
+
+    /// @notice Redeems an atomic swap to the spender. Can be called by anyone.
+    ///
+    /// @param _swapID The unique atomic swap id.
+    /// @param _secretKey The secret of the atomic swap.
+    function redeemToSpender(bytes32 _swapID, bytes32 _secretKey) public {
+        BaseSwap.redeemToSpender(
+            _swapID,
+            _secretKey
+        );
+
+        // Transfer the ETH funds from this contract to the receiver.
+        swaps[_swapID].spender.transfer(BaseSwap.swaps[_swapID].value);
     }
 
     /// @notice Refunds an atomic swap.

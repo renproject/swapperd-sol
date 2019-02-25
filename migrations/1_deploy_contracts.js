@@ -12,7 +12,7 @@ module.exports = async function (deployer, network, _accounts) {
         return;
     }
 
-    const ETHSwap = await deployer.deploy(EthSwap, config.VERSION);
+    // const ETHSwap = await deployer.deploy(EthSwap, config.VERSION);
     const WBTCSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.WBTC);
     const RENSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.REN);
     const TUSDSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.TUSD);
@@ -25,7 +25,7 @@ module.exports = async function (deployer, network, _accounts) {
     const PAXSwap = await deployer.deploy(ERC20Swap, config.VERSION, config.TOKENS.PAX);
 
     console.log(JSON.stringify({
-        ETHSwap: ETHSwap ? ETHSwap.address : "",
+        // ETHSwap: ETHSwap ? ETHSwap.address : "",
         WBTCSwap: WBTCSwap ? WBTCSwap.address : "",
         RENSwap: RENSwap ? RENSwap.address : "",
         TUSDSwap: TUSDSwap ? TUSDSwap.address : "",
