@@ -11,7 +11,7 @@
     "test-ts": "trap \"npm run clean\" INT TERM; (npm run bindings && tsc && truffle test); npm run clean",
     "coverage-ts": "trap \"npm run clean\" INT TERM; (npm run bindings && tsc && solidity-coverage); npm run clean",
     "development": "NETWORK=development npm run migrate",
-    "migrate": "npm run merge ./.merged/$NETWORK && truffle migrate --network $NETWORK --reset",
+    "migrate": ". ./.env; npm run merge ./.merged/$NETWORK && truffle migrate --network $NETWORK --reset",
     "testnet": "NETWORK=testnet npm run migrate",
     "mainnet": "NETWORK=mainnet npm run migrate",
     "verify": "truffle migrate --network verify --reset",
