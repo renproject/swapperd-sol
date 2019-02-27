@@ -4,6 +4,8 @@
   "description": "Swapperd — Solidity is the official reference implementation of Swapperd on Ethereum",
   "scripts": {
     "clean": "if [ -d \"test\" ]; then rm -rf test; fi; if [ -d \"coverageEnv\" ]; then command rm -rf coverageEnv ; fi;",
+    "testrpc-start": "docker run -d -p 8545:8545 --name testrpc wbuchwalter/testrpc",
+    "testrpc-stop": "docker stop testrpc",
     "test": "if [ -d \"test\" ]; then npm run warn; else npm run test-ts; fi;",
     "coverage": "if [ -d \"test\" ]; then npm run warn; else npm run coverage-ts; fi;",
     "merge": "sol-merger \"./contracts/**/*.sol\"",
